@@ -24,6 +24,11 @@ https://github.com/ercanatay/Backlink-Checker.git
 
 Not: zamanla bir kaç özellik ekleyerek güncellemesini yapacağım. 
 
+Kodlayıcı:
+
+Ercan ATAY
+https://www.ercanatay.com
+
 ----
 
 English:
@@ -48,3 +53,8 @@ https://github.com/ercanatay/Backlink-Checker.git
 (Get the checker2.php and backlink_checker.php files. You can run them on a Linux server or localhost)
 
 Note: I will update it by adding a few features over time.
+
+Coder:
+
+Ercan ATAY
+https://www.ercanatay.com
