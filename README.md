@@ -44,7 +44,7 @@ This tool is a simple PHP script that analyzes a given list of URLs to check var
     $mozAccessId = 'mozscape-YOUR-ACCESS-ID'; // Kendi Access ID'nizi buraya girin
     $mozSecretKey = 'YOUR-SECRET-KEY'; // Kendi Secret Key'inizi buraya girin
     ```
-    **⚠️ Güvenlik Uyarısı:** API anahtarlarını doğrudan koda gömmek production ortamları için güvenli değildir. Daha güvenli yöntemler için ortam değişkenlerini (environment variables) veya ayrı bir konfigürasyon dosyası kullanmayı検討 edin.
+    **⚠️ Güvenlik Uyarısı:** API anahtarlarını doğrudan koda gömmek production ortamları için güvenli değildir. Daha güvenli yöntemler için ortam değişkenlerini (environment variables) veya ayrı bir konfigürasyon dosyası kullanmayı edin.
 5.  Dosyayı kaydedin.
 
 ### Kullanım
