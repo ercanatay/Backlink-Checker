@@ -15,8 +15,8 @@ libxml_use_internal_errors(true);
 // WARNING: Storing credentials directly in code is insecure for production.
 // Consider using environment variables or a config file.
 // Ensure these credentials are valid and active in your Moz account.
-$mozAccessId = 'YOUR_CODE'; // Your new Access ID
-$mozSecretKey = 'YOUR_CODE'; // Your new Secret Key
+$mozAccessId = 'mozscape-YOUR-ACCESS-ID'; // Your new Access ID
+$mozSecretKey = 'YOUR-SECRET-KEY'; // Your new Secret Key
 $mozApiEndpoint = 'https://lsapi.seomoz.com/v2/url_metrics';
 // Base64 encode for the Authorization header (automatically calculated from above)
 $mozCredentialsBase64 = base64_encode($mozAccessId . ':' . $mozSecretKey);
