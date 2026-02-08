@@ -1,0 +1,22 @@
+{
+  "name": "ercanatay/backlink-checker-pro",
+  "description": "Backlink Checker Pro v2 - modular PHP SEO backlink analysis platform",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "BacklinkChecker\\": "src/"
+    }
+  },
+  "scripts": {
+    "migrate": "php bin/migrate.php",
+    "worker": "php bin/worker.php",
+    "scheduler": "php bin/scheduler.php",
+    "cleanup": "php bin/cleanup.php",
+    "test": "php tests/run.php",
+    "lint": "php tools/lint.php"
+  }
+}

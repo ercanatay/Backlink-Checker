@@ -1,138 +1,304 @@
-# PHP SEO & Backlink Checker Tool
+# Backlink Checker Pro v2
 
-Bu araç, belirtilen URL listesini analiz ederek çeşitli SEO metriklerini ve geri bağlantı (backlink) bilgilerini kontrol eden basit bir PHP betiğidir. Sonuçları web arayüzünde görüntüler ve CSV, TXT, XLS formatlarında indirme seçeneği sunar.
+Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team scale. It includes asynchronous scans, RBAC, API access, scheduling, alerts, export pipelines, and 10-language localization (including Turkish).
 
-This tool is a simple PHP script that analyzes a given list of URLs to check various SEO metrics and backlink information. It displays the results in a web interface and offers download options in CSV, TXT, and XLS formats.
+## Highlights
 
----
+- Modular architecture with clear domain/service/controller separation
+- Legacy-compatible `/index.php` entrypoint shim
+- SQLite persistence with versioned migrations
+- Queue-based scan execution with retries and dead-letter behavior
+- Team RBAC (`admin`, `editor`, `viewer`)
+- CSRF protection, hardened sessions, API token scopes, rate limiting
+- Moz provider adapter with cache TTL and health metadata
+- Backlink extraction with robust URL normalization and host-equivalent matching
+- Robots noindex detection from meta and `X-Robots-Tag`
+- Multi-link capture per result and link relation classification
+- Historical trend comparison against previous completed scan
+- Saved result views and advanced filtering/sorting
+- Scheduled scans using supported RRULE patterns
+- Alert channels: Email, Slack, signed webhook
+- Webhook delivery logging and retry via worker queue
+- Export formats: CSV, TSV/TXT, XLSX, JSON
+- Opt-in telemetry and configurable retention cleanup
+- i18n catalogs with fallback and RTL support for Arabic
+- Balanced CI quality gates with lint + automated tests
 
-## 🇹🇷 Türkçe Açıklama
+## Professional Feature Matrix (40)
 
-### Özellikler
+1. Modular app architecture
+2. Composer autoloading (PSR-4)
+3. `.env` configuration
+4. Startup configuration validation
+5. Local authentication
+6. Team RBAC
+7. CSRF enforcement
+8. Scoped API tokens
+9. Login/API rate limiting
+10. Security headers + cookie hardening
+11. Structured error payloads
+12. Structured JSON logging + correlation IDs
+13. Audit logs
+14. SQLite migrations
+15. Legacy compatibility shim
+16. Background queue
+17. Retry/backoff + dead jobs
+18. Concurrency chunk controls
+19. URL normalization (IDN-aware)
+20. Host-equivalent backlink matching
+21. Robots directive analysis
+22. Absolute URL resolution
+23. Link type classification (`dofollow/nofollow/ugc/sponsored`)
+24. Multi-link capture
+25. Redirect chain + final status capture
+26. Moz-first provider abstraction
+27. Provider cache TTL
+28. Scan trend reporting
+29. Advanced result filtering/sorting + saved views
+30. CSV/TSV/XLSX/JSON exports
+31. Team project/workspace model
+32. Recurring schedules
+33. Email/Slack/webhook alerts
+34. Webhook delivery logs
+35. REST API v1
+36. Telemetry opt-in
+37. Retention cleanup policy
+38. 10-language localization + fallback
+39. Arabic RTL support
+40. Accessibility and keyboard-first UX affordances
 
-* **Noindex Kontrolü:** Her bir URL'nin kaynak kodunda `noindex` meta etiketinin olup olmadığını kontrol eder.
-* **Backlink Kontrolü:** Her bir URL'de, forma girilen hedef "Root Domain"e işaret eden bir geri bağlantı (backlink) olup olmadığını kontrol eder.
-* **Link Tipi ve Anchor Text:** Eğer bir backlink bulunursa, linkin `dofollow` mu yoksa `nofollow` mu olduğunu ve linkin anchor text'ini (bağlantı metni) belirler.
-* **Moz Entegrasyonu:** Her bir URL için Moz API'sini kullanarak Sayfa Otoritesi (PA) ve Alan Otoritesi (DA) değerlerini çeker.
-* **Domain Bilgisi:** Analiz edilen her URL'nin alan adını ayrı bir sütunda gösterir.
-* **Sıralama:** Sonuçları Alan Otoritesi (DA) değerine göre büyükten küçüğe doğru sıralar.
-* **Stil:** Link tiplerini (dofollow/nofollow) ve DA değerlerini renklendirme ve kalınlaştırma ile vurgular.
-* **İndirme Seçenekleri:** Analiz sonuçlarını CSV, TXT veya basit bir Excel (XLS) formatında indirmenize olanak tanır.
-* **Arayüz:** Basit bir HTML formu ve UIkit ile stillendirilmiş sonuç tablosu sunar.
+## Supported Locales
 
-### Nasıl Çalışır?
+- `en-US` (default)
+- `tr-TR`
+- `es-ES`
+- `fr-FR`
+- `de-DE`
+- `it-IT`
+- `pt-BR`
+- `nl-NL`
+- `ru-RU`
+- `ar-SA` (RTL)
 
-1.  Kullanıcı, hedef "Root Domain"i ve kontrol edilecek URL listesini web formuna girer.
-2.  Betik, girilen her bir geçerli URL için aşağıdaki işlemleri yapar:
-    * PHP cURL kullanarak URL'nin HTML içeriğini çeker.
-    * DOMDocument ve DOMXPath kullanarak HTML içeriğini ayrıştırır (parse eder).
-    * `noindex` meta etiketini arar.
-    * Hedef "Root Domain"e giden `<a>` etiketlerini arar. Bulunursa, anchor text'i ve `rel="nofollow"` özelliğini kontrol ederek link tipini belirler.
-    * URL'den alan adını çıkarır.
-    * Eğer sayfa başarıyla çekildiyse, o URL için Moz API'sine ayrı bir istek göndererek PA ve DA değerlerini alır (HTTP Basic Authentication kullanarak).
-    * Tüm URL'ler işlendikten sonra, sonuçları DA değerine göre büyükten küçüğe sıralar.
-3.  İşlenen ve sıralanan sonuçlar, stil uygulanmış bir HTML tablosunda gösterilir.
-4.  Sonuçları farklı formatlarda indirmek için butonlar sunulur (PHP session kullanarak).
+Catalog format: `resources/lang/{locale}.json` with `_meta` (`version`, `lastReviewed`, `rtl`).
 
-### Kurulum
+## Tech Stack
 
-1.  **Gereksinimler:** PHP (cURL eklentisi aktif) kurulu bir web sunucusu.
-2.  Bu PHP dosyasını (`index.php` veya istediğiniz bir isimle) web sunucunuzda erişilebilir bir dizine yükleyin.
-3.  **Moz API Anahtarları:** Geçerli bir Moz API aboneliğinizin ve API anahtarlarınızın (Access ID ve Secret Key) olması gereklidir.
-4.  **Kodu Düzenleyin:** PHP dosyasını bir metin düzenleyici ile açın ve aşağıdaki değişkenleri **kendi Moz API bilgilerinizle** güncelleyin:
-    ```php
-    $mozAccessId = 'mozscape-YOUR-ACCESS-ID'; // Kendi Access ID'nizi buraya girin
-    $mozSecretKey = 'YOUR-SECRET-KEY'; // Kendi Secret Key'inizi buraya girin
-    ```
-    **⚠️ Güvenlik Uyarısı:** API anahtarlarını doğrudan koda gömmek production ortamları için güvenli değildir. Daha güvenli yöntemler için ortam değişkenlerini (environment variables) veya ayrı bir konfigürasyon dosyası kullanmayı edin.
-5.  Dosyayı kaydedin.
+- PHP 8.2+
+- SQLite (PDO)
+- cURL + DOM + intl
+- Optional Docker (Nginx + PHP-FPM + worker + scheduler)
 
-### Kullanım
+## Repository Layout
 
-1.  PHP dosyasını yüklediğiniz adresi web tarayıcınızda açın.
-2.  **Root Domain:** Geri bağlantıları hangi alan adına *doğru* aradığınızı girin (örn: `sizinwebsiteniz.com`). Bu alan adına verilen linkler kontrol edilecektir.
-3.  **URLs to Check:** Hangi URL'lerde geri bağlantı aramak istediğinizi listeleyin (her satıra bir URL). Bu URL'ler, yukarıda girdiğiniz "Root Domain"e link veriyor mu diye kontrol edilecektir.
-4.  "Start Checking" butonuna tıklayın.
-5.  İşlem tamamlandığında sonuçlar aşağıdaki tabloda görünecektir.
-6.  Sonuçları indirmek için ilgili butonları (CSV, Excel, TXT) kullanın.
+```text
+bootstrap/             # app bootstrap + autoload fallback
+src/
+  Controllers/         # WebController, ApiController
+  Database/            # PDO wrapper + Migrator
+  Domain/              # enums + URL/link domain logic
+  Http/                # request/response/router/session/rate limiter
+  I18n/                # translator + locale detection
+  Providers/           # metrics provider adapters (Moz)
+  Security/            # CSRF/token/password services
+  Services/            # scan queue/export/schedule/notification logic
+templates/             # server-rendered UI
+resources/lang/        # 10 locale catalogs
+migrations/            # SQL schema
+bin/                   # operational CLI commands
+docs/                  # deep technical docs
+public/index.php       # web root entrypoint
+index.php              # legacy compatibility shim
+```
 
-### Bağımlılıklar
+## Quick Start (Local)
 
-* **UIkit CSS/JS:** Stil ve bazı arayüz bileşenleri için UIkit kullanılır (CDN üzerinden yüklenir). İnternet bağlantısı gerektirir.
+1. Copy environment file:
 
----
+```bash
+cp .env.example .env
+```
 
-## 🇺🇸 English Description
+2. Edit `.env`:
+- `APP_KEY`
+- `BOOTSTRAP_ADMIN_EMAIL`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+- `MOZ_ACCESS_ID`
+- `MOZ_SECRET_KEY`
+- webhook/slack settings if used
 
-### Features
+3. Run migrations:
 
-* **Noindex Check:** Checks if a `noindex` meta tag exists in the source code of each URL.
-* **Backlink Check:** Checks if each URL contains a backlink pointing to the target "Root Domain" entered in the form.
-* **Link Type & Anchor Text:** If a backlink is found, determines if the link is `dofollow` or `nofollow` and extracts its anchor text.
-* **Moz Integration:** Fetches Page Authority (PA) and Domain Authority (DA) values for each URL using the Moz API.
-* **Domain Info:** Displays the domain name of the analyzed URL in a separate column.
-* **Sorting:** Sorts the results in descending order based on Domain Authority (DA).
-* **Styling:** Highlights link types (dofollow/nofollow) and DA values with colors and bolding.
-* **Download Options:** Allows downloading the analysis results in CSV, TXT, or a simple Excel (XLS) format.
-* **Interface:** Provides a simple HTML form and a results table styled with UIkit.
+```bash
+php bin/migrate.php
+```
 
-### How it Works
+4. Start local web server:
 
-1.  The user enters the target "Root Domain" and a list of URLs to check via the web form.
-2.  The script processes each valid input URL:
-    * Fetches the HTML content of the URL using PHP cURL.
-    * Parses the HTML content using DOMDocument and DOMXPath.
-    * Searches for the `noindex` meta tag.
-    * Searches for `<a>` tags linking to the target "Root Domain". If found, extracts anchor text and checks the `rel="nofollow"` attribute to determine the link type.
-    * Extracts the domain name from the URL.
-    * If the page was fetched successfully, sends a separate request to the Moz API for that single URL to retrieve PA and DA values (using HTTP Basic Authentication).
-    * After processing all URLs, sorts the results by DA in descending order.
-3.  The processed and sorted results are displayed in a styled HTML table.
-4.  Buttons are provided to download the results in different formats (using PHP sessions).
+```bash
+php -S 127.0.0.1:8080 -t .
+```
 
-### Setup
+5. Open:
 
-1.  **Requirements:** A web server with PHP installed and the cURL extension enabled.
-2.  Upload this PHP file (e.g., `index.php`) to an accessible directory on your web server.
-3.  **Moz API Keys:** You need a valid Moz API subscription and your API credentials (Access ID and Secret Key).
-4.  **Edit the Code:** Open the PHP file in a text editor and update the following variables with **your Moz API credentials**:
-    ```php
-    $mozAccessId = 'mozscape-YOUR-ACCESS-ID'; // Enter your Access ID here
-    $mozSecretKey = 'YOUR-SECRET-KEY'; // Enter your Secret Key here
-    ```
-    **⚠️ Security Warning:** Hardcoding API keys directly into the code is not recommended for production environments. Consider using environment variables or a separate configuration file for better security.
-5.  Save the file.
+- `http://127.0.0.1:8080/index.php`
 
-### Usage
+6. Start background processes (separate terminals):
 
-1.  Open the URL of the uploaded PHP file in your web browser.
-2.  **Root Domain:** Enter the domain you want to check *for* backlinks pointing *to* it (e.g., `yourwebsite.com`).
-3.  **URLs to Check:** List the URLs where you want to search *for* backlinks (one URL per line). These URLs will be checked to see if they link to the "Root Domain" entered above.
-4.  Click the "Start Checking" button.
-5.  Once the process is complete, the results will be displayed in the table below.
-6.  Use the download buttons (CSV, Excel, TXT) to export the results.
+```bash
+php bin/worker.php
+php bin/scheduler.php
+```
 
-### Dependencies
+## Docker Deployment
 
-* **UIkit CSS/JS:** Used for styling and some interface components (loaded via CDN). Requires an internet connection.
+```bash
+cp .env.example .env
+# configure .env
 
----
+docker compose up --build -d
+```
 
-## Kaynak ve Geliştirici / Source and Developer
+Application URL: `http://localhost:8080`
 
-Bu araç, Ercan Atay tarafından geliştirilen orijinal [Backlink-Checker](https://github.com/ercanatay/Backlink-Checker) projesinden ilham alınarak ve üzerine Moz API entegrasyonu gibi ek özellikler eklenerek geliştirilmiştir.
+Services:
+- `web` (Nginx)
+- `app` (PHP-FPM)
+- `worker` (queue consumer)
+- `scheduler` (recurring scan trigger)
 
-This tool was developed with inspiration from the original [Backlink-Checker](https://github.com/ercanatay/Backlink-Checker) project by Ercan Atay, with additional features such as Moz API integration.
+## Shared Hosting Deployment
 
-**Orijinal Geliştirici / Original Developer:** Ercan ATAY ([https://www.ercanatay.com](https://www.ercanatay.com))
+1. Upload all files.
+2. Point document root to `public/`.
+3. Ensure PHP extensions: `pdo_sqlite`, `curl`, `dom`, `intl`.
+4. Create `.env` from `.env.example`.
+5. Run `php bin/migrate.php` once.
+6. Add cron jobs:
 
----
+```cron
+* * * * * php /path/to/bin/scheduler.php
+* * * * * php /path/to/bin/worker.php 20
+0 3 * * * php /path/to/bin/cleanup.php
+```
+
+## Authentication and RBAC
+
+- Bootstraps first admin from `.env` if no users exist.
+- Roles:
+  - `admin`: full control
+  - `editor`: scan + schedule + notification management
+  - `viewer`: read-only project/scan access
+
+## API v1
+
+Base: `/api/v1`
+
+- `POST /auth/login`
+- `POST /projects`
+- `POST /scans`
+- `GET /scans/{scanId}`
+- `GET /scans/{scanId}/results`
+- `POST /scans/{scanId}/cancel`
+- `POST /schedules`
+- `GET /exports/{exportId}`
+- `POST /webhooks/test`
+
+See full details in `/docs/API.md`.
+
+## Queue, Scheduler, and Retention
+
+- Scan creation enqueues `scan.run` jobs.
+- Worker processes scans and webhook delivery jobs.
+- Scheduler creates scans from due schedule rules.
+- Cleanup task purges old operational data based on retention.
+
+Commands:
+
+```bash
+php bin/worker.php
+php bin/scheduler.php
+php bin/cleanup.php
+```
+
+## Exports
+
+Per-scan exports are generated on demand and persisted in `storage/exports`:
+
+- CSV
+- TSV/TXT
+- XLSX
+- JSON
+
+## Security Defaults
+
+- Session hardening (`HttpOnly`, `SameSite`, configurable secure cookie)
+- CSRF tokens for state-changing forms
+- API scopes + token hashing (`sha256`)
+- Rate limiting in SQLite for login/API paths
+- Strict security headers and CSP
+- Audit logging for sensitive actions
+
+## Observability
+
+- JSON logs: `storage/logs/app.log`
+- Correlation ID included in response headers and log contexts
+- Optional telemetry (`TELEMETRY_ENABLED` or settings toggle)
+
+## Testing and CI
+
+Run locally:
+
+```bash
+php tools/lint.php
+php tests/run.php
+```
+
+CI pipeline:
+- `.github/workflows/ci.yml`
+- Lint + automated tests on push/pull request
+
+## Key Environment Variables
+
+- `APP_ENV`, `APP_DEBUG`, `APP_URL`, `APP_KEY`
+- `DB_PATH`
+- `SESSION_*`, `COOKIE_*`, `SECURITY_FORCE_HTTPS`
+- `RATE_LIMIT_LOGIN_PER_15_MIN`, `RATE_LIMIT_API_PER_MIN`
+- `MOZ_ACCESS_ID`, `MOZ_SECRET_KEY`, `MOZ_API_ENDPOINT`
+- `SCAN_*`, `QUEUE_*`
+- `RETENTION_DAYS`
+- `WEBHOOK_SIGNING_SECRET`, `SLACK_WEBHOOK_URL`, `SMTP_FROM`
+- `TELEMETRY_ENABLED`
+- `BOOTSTRAP_ADMIN_*`
+
+## Migration from Legacy Script
+
+- `/index.php` remains available and now boots the modular app.
+- Results are persisted in SQLite instead of session-only storage.
+- Scans run asynchronously through queue workers.
+- UI and API now require authenticated access.
+
+See `/docs/MIGRATION.md`.
+
+## Troubleshooting
+
+### Login fails for bootstrap admin
+- Verify `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` in `.env`.
+- Ensure database is writable (`data/`).
+
+### Scans stay queued
+- Worker is not running. Start `php bin/worker.php`.
+
+### Scheduled scans do not trigger
+- Scheduler is not running. Start `php bin/scheduler.php` or cron equivalent.
+
+### Moz DA/PA missing
+- Check `MOZ_ACCESS_ID` and `MOZ_SECRET_KEY`.
+- Inspect `storage/logs/app.log` for upstream errors.
+
+### Export download missing
+- Ensure `storage/exports` is writable.
 
 ## License
 
-(Projeniz için bir lisans eklemeyi düşünün, örneğin MIT Lisansı)
-Bu kodu kaynak göstererek kullanabilirsiniz.
-
-(Consider adding a license for your project, e.g., MIT License)
-You can use this code with attribution.
-
+MIT. See `LICENSE`.

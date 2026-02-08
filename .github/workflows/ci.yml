@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: curl, dom, intl, pdo_sqlite
+
+      - name: Install dependencies (if composer.lock exists)
+        run: |
+          if [ -f composer.lock ]; then
+            composer install --no-interaction --no-progress
+          fi
+
+      - name: Lint
+        run: php tools/lint.php
+
+      - name: Tests
+        run: php tests/run.php

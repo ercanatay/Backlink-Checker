@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="<?= htmlspecialchars($locale, ENT_QUOTES, 'UTF-8') ?>" dir="<?= $isRtl ? 'rtl' : 'ltr' ?>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><?= htmlspecialchars($t('dashboard.title'), ENT_QUOTES, 'UTF-8') ?></title>
+  <style>
+    :root { --bg:#f8fafc; --panel:#fff; --text:#111827; --muted:#4b5563; --accent:#0f766e; --danger:#b91c1c; --ok:#166534; --border:#d1d5db; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"IBM Plex Sans","Segoe UI",sans-serif; background:linear-gradient(150deg,#ecfeff 0%,#f8fafc 40%,#eff6ff 100%); color:var(--text); }
+    .skip-link { position:absolute; left:-9999px; top:0; background:#111827; color:#fff; padding:8px; }
+    .skip-link:focus { left:12px; top:12px; }
+    header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid var(--border); background:#fff; }
+    h1 { margin:0; font-size:1.25rem; }
+    .container { max-width:1200px; margin:0 auto; padding:22px; display:grid; gap:18px; }
+    .grid { display:grid; grid-template-columns:1.2fr .8fr; gap:18px; }
+    .panel { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px; }
+    .flash { padding:10px 12px; border-radius:10px; margin-bottom:12px; }
+    .flash.success { background:#dcfce7; color:var(--ok); }
+    .flash.error { background:#fee2e2; color:var(--danger); }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border-bottom:1px solid #e5e7eb; text-align:left; padding:10px; vertical-align:top; }
+    input, textarea, select, button { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); font:inherit; }
+    textarea { min-height:110px; }
+    button { cursor:pointer; background:var(--accent); color:#fff; border:none; font-weight:600; }
+    .nav { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .nav a, .nav button { text-decoration:none; background:#fff; border:1px solid var(--border); padding:8px 10px; border-radius:10px; color:#111827; width:auto; }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .inline { display:inline; width:auto; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media (max-width: 920px) { .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<a href="#main" class="skip-link"><?= htmlspecialchars($t('a11y.skip_to_content'), ENT_QUOTES, 'UTF-8') ?></a>
+<header>
+  <div>
+    <h1><?= htmlspecialchars($t('dashboard.title'), ENT_QUOTES, 'UTF-8') ?></h1>
+    <small><?= htmlspecialchars($t('dashboard.welcome', ['name' => $user['display_name'] ?? '']), ENT_QUOTES, 'UTF-8') ?></small>
+  </div>
+  <nav class="nav" aria-label="Main navigation">
+    <a href="/dashboard"><?= htmlspecialchars($t('nav.dashboard'), ENT_QUOTES, 'UTF-8') ?></a>
+    <form class="inline" method="post" action="/logout">
+      <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+      <button type="submit"><?= htmlspecialchars($t('nav.logout'), ENT_QUOTES, 'UTF-8') ?></button>
+    </form>
+  </nav>
+</header>
+<main id="main" class="container">
+  <?php if (!empty($flash)): ?>
+    <div class="flash <?= htmlspecialchars($flash['type'], ENT_QUOTES, 'UTF-8') ?>" role="status">
+      <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
+    </div>
+  <?php endif; ?>
+
+  <?php if (!empty($newToken)): ?>
+    <div class="panel" role="alert">
+      <strong><?= htmlspecialchars($t('api.token_created'), ENT_QUOTES, 'UTF-8') ?></strong>
+      <div class="mono" style="margin-top:8px;"><?= htmlspecialchars($newToken, ENT_QUOTES, 'UTF-8') ?></div>
+      <?php unset($_SESSION['new_token']); ?>
+    </div>
+  <?php endif; ?>
+
+  <section class="grid">
+    <article class="panel">
+      <h2><?= htmlspecialchars($t('nav.projects'), ENT_QUOTES, 'UTF-8') ?></h2>
+      <?php if (empty($projects)): ?>
+        <p><?= htmlspecialchars($t('project.no_projects'), ENT_QUOTES, 'UTF-8') ?></p>
+      <?php else: ?>
+        <table>
+          <thead>
+            <tr>
+              <th><?= htmlspecialchars($t('project.name'), ENT_QUOTES, 'UTF-8') ?></th>
+              <th><?= htmlspecialchars($t('project.root_domain'), ENT_QUOTES, 'UTF-8') ?></th>
+              <th><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></th>
+              <th><?= htmlspecialchars($t('common.actions'), ENT_QUOTES, 'UTF-8') ?></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($projects as $project): ?>
+              <tr>
+                <td><?= htmlspecialchars($project['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                <td class="mono"><?= htmlspecialchars($project['root_domain'], ENT_QUOTES, 'UTF-8') ?></td>
+                <td><span class="pill"><?= htmlspecialchars($project['membership_role'], ENT_QUOTES, 'UTF-8') ?></span></td>
+                <td><a href="/projects/<?= (int) $project['id'] ?>"><?= htmlspecialchars($t('project.open'), ENT_QUOTES, 'UTF-8') ?></a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </article>
+
+    <aside class="panel">
+      <h2><?= htmlspecialchars($t('dashboard.create_project'), ENT_QUOTES, 'UTF-8') ?></h2>
+      <?php if (!empty($error)): ?><p style="color:#b91c1c"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?>
+      <form method="post" action="/projects">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+        <label><?= htmlspecialchars($t('project.name'), ENT_QUOTES, 'UTF-8') ?></label>
+        <input type="text" name="name" required>
+
+        <label><?= htmlspecialchars($t('project.root_domain'), ENT_QUOTES, 'UTF-8') ?></label>
+        <input type="text" name="root_domain" placeholder="example.com" required>
+
+        <label><?= htmlspecialchars($t('project.description'), ENT_QUOTES, 'UTF-8') ?></label>
+        <textarea name="description"></textarea>
+
+        <button type="submit"><?= htmlspecialchars($t('project.create'), ENT_QUOTES, 'UTF-8') ?></button>
+      </form>
+    </aside>
+  </section>
+
+  <section class="panel">
+    <h2><?= htmlspecialchars($t('dashboard.latest_scans'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <?php if (empty($latestScans)): ?>
+      <p><?= htmlspecialchars($t('dashboard.no_scans'), ENT_QUOTES, 'UTF-8') ?></p>
+    <?php else: ?>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></th>
+            <th><?= htmlspecialchars($t('scan.total_targets'), ENT_QUOTES, 'UTF-8') ?></th>
+            <th><?= htmlspecialchars($t('scan.processed_targets'), ENT_QUOTES, 'UTF-8') ?></th>
+            <th><?= htmlspecialchars($t('scan.created_at'), ENT_QUOTES, 'UTF-8') ?></th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($latestScans as $scan): ?>
+            <tr>
+              <td><a href="/scans/<?= (int) $scan['id'] ?>">#<?= (int) $scan['id'] ?></a></td>
+              <td><?= htmlspecialchars($scan['status'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td><?= (int) $scan['total_targets'] ?></td>
+              <td><?= (int) $scan['processed_targets'] ?></td>
+              <td><?= htmlspecialchars((string) $scan['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    <?php endif; ?>
+  </section>
+
+  <section class="panel">
+    <h2><?= htmlspecialchars($t('nav.settings'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <form method="post" action="/settings">
+      <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+      <div class="row">
+        <div>
+          <label><?= htmlspecialchars($t('settings.locale'), ENT_QUOTES, 'UTF-8') ?></label>
+          <select name="locale">
+            <?php foreach ($supportedLocales as $supportedLocale): ?>
+              <option value="<?= htmlspecialchars($supportedLocale, ENT_QUOTES, 'UTF-8') ?>" <?= $supportedLocale === $locale ? 'selected' : '' ?>>
+                <?= htmlspecialchars($supportedLocale, ENT_QUOTES, 'UTF-8') ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label><?= htmlspecialchars($t('settings.retention_days'), ENT_QUOTES, 'UTF-8') ?></label>
+          <input type="number" min="1" max="3650" name="retention_days" value="90">
+        </div>
+      </div>
+      <label><input class="inline" type="checkbox" name="telemetry" value="1"> <?= htmlspecialchars($t('settings.telemetry'), ENT_QUOTES, 'UTF-8') ?></label>
+      <button type="submit"><?= htmlspecialchars($t('settings.save'), ENT_QUOTES, 'UTF-8') ?></button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2><?= htmlspecialchars($t('nav.api_tokens'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <form method="post" action="/api-tokens">
+      <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+      <div class="row">
+        <div>
+          <label><?= htmlspecialchars($t('api.name'), ENT_QUOTES, 'UTF-8') ?></label>
+          <input type="text" name="name" required>
+        </div>
+        <div>
+          <label><?= htmlspecialchars($t('api.scopes'), ENT_QUOTES, 'UTF-8') ?> (comma separated)</label>
+          <input type="text" name="scopes" value="scans:read,scans:write,projects:write,exports:read,schedules:write,webhooks:test">
+        </div>
+      </div>
+      <button type="submit"><?= htmlspecialchars($t('api.create'), ENT_QUOTES, 'UTF-8') ?></button>
+    </form>
+  </section>
+</main>
+<script>
+  document.addEventListener('keydown', (event) => {
+    if (event.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      const firstInput = document.querySelector('input, textarea');
+      if (firstInput) {
+        event.preventDefault();
+        firstInput.focus();
+      }
+    }
+  });
+</script>
+</body>
+</html>
