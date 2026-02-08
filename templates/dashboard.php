@@ -23,6 +23,7 @@
     input, textarea, select, button { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); font:inherit; }
     textarea { min-height:110px; }
     button { cursor:pointer; background:var(--accent); color:#fff; border:none; font-weight:600; }
+    input:focus, select:focus, button:focus { outline:3px solid rgba(15,118,110,.6); outline-offset:1px; }
     .nav { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .nav a, .nav button { text-decoration:none; background:#fff; border:1px solid var(--border); padding:8px 10px; border-radius:10px; color:#111827; width:auto; }
     .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; }
@@ -71,10 +72,10 @@
         <table>
           <thead>
             <tr>
-              <th><?= htmlspecialchars($t('project.name'), ENT_QUOTES, 'UTF-8') ?></th>
-              <th><?= htmlspecialchars($t('project.root_domain'), ENT_QUOTES, 'UTF-8') ?></th>
-              <th><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></th>
-              <th><?= htmlspecialchars($t('common.actions'), ENT_QUOTES, 'UTF-8') ?></th>
+              <th scope="col"><?= htmlspecialchars($t('project.name'), ENT_QUOTES, 'UTF-8') ?></th>
+              <th scope="col"><?= htmlspecialchars($t('project.root_domain'), ENT_QUOTES, 'UTF-8') ?></th>
+              <th scope="col"><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></th>
+              <th scope="col"><?= htmlspecialchars($t('common.actions'), ENT_QUOTES, 'UTF-8') ?></th>
             </tr>
           </thead>
           <tbody>
@@ -96,14 +97,14 @@
       <?php if (!empty($error)): ?><p style="color:#b91c1c"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?>
       <form method="post" action="/projects">
         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-        <label><?= htmlspecialchars($t('project.name'), ENT_QUOTES, 'UTF-8') ?></label>
-        <input type="text" name="name" required>
+        <label for="project-name"><?= htmlspecialchars($t('project.name'), ENT_QUOTES, 'UTF-8') ?></label>
+        <input id="project-name" type="text" name="name" required>
 
-        <label><?= htmlspecialchars($t('project.root_domain'), ENT_QUOTES, 'UTF-8') ?></label>
-        <input type="text" name="root_domain" placeholder="example.com" required>
+        <label for="project-root-domain"><?= htmlspecialchars($t('project.root_domain'), ENT_QUOTES, 'UTF-8') ?></label>
+        <input id="project-root-domain" type="text" name="root_domain" placeholder="example.com" required>
 
-        <label><?= htmlspecialchars($t('project.description'), ENT_QUOTES, 'UTF-8') ?></label>
-        <textarea name="description"></textarea>
+        <label for="project-description"><?= htmlspecialchars($t('project.description'), ENT_QUOTES, 'UTF-8') ?></label>
+        <textarea id="project-description" name="description"></textarea>
 
         <button type="submit"><?= htmlspecialchars($t('project.create'), ENT_QUOTES, 'UTF-8') ?></button>
       </form>
@@ -118,11 +119,11 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th>
-            <th><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></th>
-            <th><?= htmlspecialchars($t('scan.total_targets'), ENT_QUOTES, 'UTF-8') ?></th>
-            <th><?= htmlspecialchars($t('scan.processed_targets'), ENT_QUOTES, 'UTF-8') ?></th>
-            <th><?= htmlspecialchars($t('scan.created_at'), ENT_QUOTES, 'UTF-8') ?></th>
+            <th scope="col">ID</th>
+            <th scope="col"><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></th>
+            <th scope="col"><?= htmlspecialchars($t('scan.total_targets'), ENT_QUOTES, 'UTF-8') ?></th>
+            <th scope="col"><?= htmlspecialchars($t('scan.processed_targets'), ENT_QUOTES, 'UTF-8') ?></th>
+            <th scope="col"><?= htmlspecialchars($t('scan.created_at'), ENT_QUOTES, 'UTF-8') ?></th>
           </tr>
         </thead>
         <tbody>
@@ -146,8 +147,8 @@
       <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
       <div class="row">
         <div>
-          <label><?= htmlspecialchars($t('settings.locale'), ENT_QUOTES, 'UTF-8') ?></label>
-          <select name="locale">
+          <label for="settings-locale"><?= htmlspecialchars($t('settings.locale'), ENT_QUOTES, 'UTF-8') ?></label>
+          <select id="settings-locale" name="locale">
             <?php foreach ($supportedLocales as $supportedLocale): ?>
               <option value="<?= htmlspecialchars($supportedLocale, ENT_QUOTES, 'UTF-8') ?>" <?= $supportedLocale === $locale ? 'selected' : '' ?>>
                 <?= htmlspecialchars($supportedLocale, ENT_QUOTES, 'UTF-8') ?>
@@ -156,8 +157,8 @@
           </select>
         </div>
         <div>
-          <label><?= htmlspecialchars($t('settings.retention_days'), ENT_QUOTES, 'UTF-8') ?></label>
-          <input type="number" min="1" max="3650" name="retention_days" value="90">
+          <label for="settings-retention"><?= htmlspecialchars($t('settings.retention_days'), ENT_QUOTES, 'UTF-8') ?></label>
+          <input id="settings-retention" type="number" min="1" max="3650" name="retention_days" value="90">
         </div>
       </div>
       <label><input class="inline" type="checkbox" name="telemetry" value="1"> <?= htmlspecialchars($t('settings.telemetry'), ENT_QUOTES, 'UTF-8') ?></label>
@@ -171,12 +172,12 @@
       <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
       <div class="row">
         <div>
-          <label><?= htmlspecialchars($t('api.name'), ENT_QUOTES, 'UTF-8') ?></label>
-          <input type="text" name="name" required>
+          <label for="api-token-name"><?= htmlspecialchars($t('api.name'), ENT_QUOTES, 'UTF-8') ?></label>
+          <input id="api-token-name" type="text" name="name" required>
         </div>
         <div>
-          <label><?= htmlspecialchars($t('api.scopes'), ENT_QUOTES, 'UTF-8') ?> (comma separated)</label>
-          <input type="text" name="scopes" value="scans:read,scans:write,projects:write,exports:read,schedules:write,webhooks:test">
+          <label for="api-token-scopes"><?= htmlspecialchars($t('api.scopes'), ENT_QUOTES, 'UTF-8') ?> (comma separated)</label>
+          <input id="api-token-scopes" type="text" name="scopes" value="scans:read,scans:write,projects:write,exports:read,schedules:write,webhooks:test">
         </div>
       </div>
       <button type="submit"><?= htmlspecialchars($t('api.create'), ENT_QUOTES, 'UTF-8') ?></button>
