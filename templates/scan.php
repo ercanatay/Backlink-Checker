@@ -23,10 +23,13 @@
     .err { color:var(--danger); }
     .tools { display:flex; gap:8px; flex-wrap:wrap; }
     .tools a, .tools button { width:auto; text-decoration:none; border:1px solid var(--border); padding:8px 10px; border-radius:10px; color:#111827; background:#fff; }
+    .skip-link { position:absolute; left:-9999px; }
+    .skip-link:focus { left:12px; top:12px; background:#111827; color:#fff; padding:8px; border-radius:6px; z-index:10; }
     @media (max-width: 1080px) { form.filters { grid-template-columns:1fr 1fr; } .meta { grid-template-columns:1fr 1fr; } }
   </style>
 </head>
 <body>
+<a href="#main" class="skip-link"><?= htmlspecialchars($t('a11y.skip_to_content'), ENT_QUOTES, 'UTF-8') ?></a>
 <header>
   <div>
     <strong><?= htmlspecialchars($t('scan.details'), ENT_QUOTES, 'UTF-8') ?> #<?= (int) $scan['id'] ?></strong>
@@ -46,8 +49,8 @@
     <?php endif; ?>
   </div>
 </header>
-<main class="container">
-  <?php if (!empty($flash)): ?><div class="panel"><?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+<main id="main" class="container">
+  <?php if (!empty($flash)): ?><div class="panel" role="status"><?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
   <section class="panel meta">
     <div><strong><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></strong><br><?= htmlspecialchars($scan['status'], ENT_QUOTES, 'UTF-8') ?></div>
     <div><strong><?= htmlspecialchars($t('scan.total_targets'), ENT_QUOTES, 'UTF-8') ?></strong><br><?= (int) $scan['total_targets'] ?></div>
@@ -68,11 +71,11 @@
   <section class="panel">
     <form method="get" class="filters">
       <input type="hidden" name="noop" value="1">
-      <div><label><?= htmlspecialchars($t('scan.filter_status'), ENT_QUOTES, 'UTF-8') ?></label><input name="status" value="<?= htmlspecialchars($filters['status'], ENT_QUOTES, 'UTF-8') ?>"></div>
-      <div><label><?= htmlspecialchars($t('scan.filter_link_type'), ENT_QUOTES, 'UTF-8') ?></label><input name="link_type" value="<?= htmlspecialchars($filters['link_type'], ENT_QUOTES, 'UTF-8') ?>"></div>
-      <div><label><?= htmlspecialchars($t('scan.filter_search'), ENT_QUOTES, 'UTF-8') ?></label><input name="search" value="<?= htmlspecialchars($filters['search'], ENT_QUOTES, 'UTF-8') ?>"></div>
-      <div><label><?= htmlspecialchars($t('scan.sort'), ENT_QUOTES, 'UTF-8') ?></label>
-        <select name="sort">
+      <div><label for="filter-status"><?= htmlspecialchars($t('scan.filter_status'), ENT_QUOTES, 'UTF-8') ?></label><input id="filter-status" name="status" value="<?= htmlspecialchars($filters['status'], ENT_QUOTES, 'UTF-8') ?>"></div>
+      <div><label for="filter-link-type"><?= htmlspecialchars($t('scan.filter_link_type'), ENT_QUOTES, 'UTF-8') ?></label><input id="filter-link-type" name="link_type" value="<?= htmlspecialchars($filters['link_type'], ENT_QUOTES, 'UTF-8') ?>"></div>
+      <div><label for="filter-search"><?= htmlspecialchars($t('scan.filter_search'), ENT_QUOTES, 'UTF-8') ?></label><input id="filter-search" name="search" value="<?= htmlspecialchars($filters['search'], ENT_QUOTES, 'UTF-8') ?>"></div>
+      <div><label for="filter-sort"><?= htmlspecialchars($t('scan.sort'), ENT_QUOTES, 'UTF-8') ?></label>
+        <select id="filter-sort" name="sort">
           <option value="id_desc" <?= $filters['sort'] === 'id_desc' ? 'selected' : '' ?>>Newest</option>
           <option value="da_desc" <?= $filters['sort'] === 'da_desc' ? 'selected' : '' ?>>DA desc</option>
           <option value="da_asc" <?= $filters['sort'] === 'da_asc' ? 'selected' : '' ?>>DA asc</option>
