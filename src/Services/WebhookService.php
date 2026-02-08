@@ -6,6 +6,7 @@ namespace BacklinkChecker\Services;
 
 use BacklinkChecker\Config\Config;
 use BacklinkChecker\Database\Database;
+use BacklinkChecker\Security\SsrfGuard;
 
 final class WebhookService
 {
@@ -23,6 +24,14 @@ final class WebhookService
      */
     public function deliver(array $notification, array $payload, int $attempt = 1): array
     {
+        // SSRF protection: block webhook delivery to internal/private network addresses
+        $destination = (string) $notification['destination'];
+        try {
+            SsrfGuard::assertExternalUrl($destination);
+        } catch (\InvalidArgumentException) {
+            return ['success' => false, 'status_code' => 0, 'response' => 'Blocked by SSRF protection'];
+        }
+
         $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
         $secret = (string) ($notification['secret'] ?: $this->config->string('WEBHOOK_SIGNING_SECRET'));
         $signature = hash_hmac('sha256', $body, $secret);
