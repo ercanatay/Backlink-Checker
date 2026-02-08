@@ -158,65 +158,76 @@ final class ScanService
 
                 $metrics = $metricUrls === [] ? [] : $this->provider->fetchMetrics($metricUrls);
 
-                foreach ($analysisResults as $entry) {
-                    $target = $entry['target'];
-                    $analysis = $entry['analysis'];
+                // Perf: Batch all DB writes for this chunk in a single transaction.
+                // Without this, each INSERT/UPDATE auto-commits individually, requiring
+                // one fsync per statement. For a 500-target scan averaging 10 links each,
+                // this reduces ~6,500 implicit transactions to ~100 (one per chunk).
+                $this->db->beginTransaction();
+                try {
+                    foreach ($analysisResults as $entry) {
+                        $target = $entry['target'];
+                        $analysis = $entry['analysis'];
 
-                    $metric = $metrics[(string) $analysis['final_url']] ?? ['pa' => null, 'da' => null, 'status' => 'n/a', 'error' => null];
-                    $providerStatus = (string) ($metric['status'] ?? 'n/a');
-                    $errorMessage = trim(((string) ($analysis['error_message'] ?? '')) . ' ' . ((string) ($metric['error'] ?? '')));
-                    $errorMessage = $errorMessage === '' ? null : $errorMessage;
+                        $metric = $metrics[(string) $analysis['final_url']] ?? ['pa' => null, 'da' => null, 'status' => 'n/a', 'error' => null];
+                        $providerStatus = (string) ($metric['status'] ?? 'n/a');
+                        $errorMessage = trim(((string) ($analysis['error_message'] ?? '')) . ' ' . ((string) ($metric['error'] ?? '')));
+                        $errorMessage = $errorMessage === '' ? null : $errorMessage;
 
-                    $this->db->execute(
-                        'INSERT INTO scan_results(scan_id, target_id, source_url, source_domain, final_url, final_domain, http_status, fetch_status, '
-                        . 'redirect_chain, robots_noindex, x_robots_noindex, backlink_found, best_link_type, anchor_text, page_authority, domain_authority, '
-                        . 'provider_status, error_message, fetched_at, created_at) '
-                        . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        [
-                            $scanId,
-                            $target['id'],
-                            $analysis['source_url'],
-                            $analysis['source_domain'],
-                            $analysis['final_url'],
-                            $analysis['final_domain'],
-                            $analysis['http_status'],
-                            $analysis['fetch_status'],
-                            json_encode($analysis['redirect_chain']),
-                            $analysis['robots_noindex'] ? 1 : 0,
-                            $analysis['x_robots_noindex'] ? 1 : 0,
-                            $analysis['backlink_found'] ? 1 : 0,
-                            $analysis['best_link_type'],
-                            $analysis['anchor_text'],
-                            $metric['pa'],
-                            $metric['da'],
-                            $providerStatus,
-                            $errorMessage,
-                            gmdate('c'),
-                            gmdate('c'),
-                        ]
-                    );
-
-                    $resultId = $this->db->lastInsertId();
-                    foreach (($analysis['links'] ?? []) as $link) {
                         $this->db->execute(
-                            'INSERT INTO scan_links(result_id, href, resolved_url, rel, link_type, anchor_text, is_target, created_at) '
-                            . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                            'INSERT INTO scan_results(scan_id, target_id, source_url, source_domain, final_url, final_domain, http_status, fetch_status, '
+                            . 'redirect_chain, robots_noindex, x_robots_noindex, backlink_found, best_link_type, anchor_text, page_authority, domain_authority, '
+                            . 'provider_status, error_message, fetched_at, created_at) '
+                            . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                             [
-                                $resultId,
-                                $link['href'] ?? null,
-                                $link['resolved_url'] ?? null,
-                                $link['rel'] ?? null,
-                                $link['link_type'] ?? 'none',
-                                $link['anchor_text'] ?? null,
-                                !empty($link['is_target']) ? 1 : 0,
+                                $scanId,
+                                $target['id'],
+                                $analysis['source_url'],
+                                $analysis['source_domain'],
+                                $analysis['final_url'],
+                                $analysis['final_domain'],
+                                $analysis['http_status'],
+                                $analysis['fetch_status'],
+                                json_encode($analysis['redirect_chain']),
+                                $analysis['robots_noindex'] ? 1 : 0,
+                                $analysis['x_robots_noindex'] ? 1 : 0,
+                                $analysis['backlink_found'] ? 1 : 0,
+                                $analysis['best_link_type'],
+                                $analysis['anchor_text'],
+                                $metric['pa'],
+                                $metric['da'],
+                                $providerStatus,
+                                $errorMessage,
+                                gmdate('c'),
                                 gmdate('c'),
                             ]
                         );
-                    }
 
-                    $this->db->execute('UPDATE scan_targets SET status = ?, updated_at = ? WHERE id = ?', ['completed', gmdate('c'), $target['id']]);
-                    $processed++;
-                    $this->db->execute('UPDATE scans SET processed_targets = ?, updated_at = ? WHERE id = ?', [$processed, gmdate('c'), $scanId]);
+                        $resultId = $this->db->lastInsertId();
+                        foreach (($analysis['links'] ?? []) as $link) {
+                            $this->db->execute(
+                                'INSERT INTO scan_links(result_id, href, resolved_url, rel, link_type, anchor_text, is_target, created_at) '
+                                . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                                [
+                                    $resultId,
+                                    $link['href'] ?? null,
+                                    $link['resolved_url'] ?? null,
+                                    $link['rel'] ?? null,
+                                    $link['link_type'] ?? 'none',
+                                    $link['anchor_text'] ?? null,
+                                    !empty($link['is_target']) ? 1 : 0,
+                                    gmdate('c'),
+                                ]
+                            );
+                        }
+
+                        $this->db->execute('UPDATE scan_targets SET status = ?, updated_at = ? WHERE id = ?', ['completed', gmdate('c'), $target['id']]);
+                        $processed++;
+                        $this->db->execute('UPDATE scans SET processed_targets = ?, updated_at = ? WHERE id = ?', [$processed, gmdate('c'), $scanId]);
+                    }
+                    $this->db->commit();
+                } catch (\Throwable $e) {
+                    $this->db->rollBack();
+                    throw $e;
                 }
             }
 
