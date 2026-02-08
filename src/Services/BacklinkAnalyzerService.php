@@ -86,6 +86,9 @@ final class BacklinkAnalyzerService
 
         $anchors = $xpath->query('//a[@href]');
         $root = $this->normalizer->rootDomain($rootDomain);
+        // Optimization: Pre-calculate host equivalence to skip relative links later
+        $isSourceSameAsTarget = $this->normalizer->hostsEquivalent($result['final_domain'], $root);
+
         if ($anchors === false) {
             return $result;
         }
@@ -94,6 +97,12 @@ final class BacklinkAnalyzerService
         foreach ($anchors as $anchor) {
             $href = trim((string) $anchor->getAttribute('href'));
             if ($href === '') {
+                continue;
+            }
+
+            // Optimization: Skip relative links if source is not target
+            $isAbsolute = preg_match('#^https?://#i', $href) || str_starts_with($href, '//');
+            if (!$isAbsolute && !$isSourceSameAsTarget) {
                 continue;
             }
 
