@@ -182,9 +182,9 @@ final class App
         $this->translator = $translator;
     }
 
-    public function run(): void
+    public function run(?Request $request = null): void
     {
-        $request = Request::fromGlobals();
+        $request = $request ?? Request::fromGlobals();
         $correlationId = $request->header('X-Correlation-Id') ?: \BacklinkChecker\Support\Uuid::v4();
 
         if ($this->config->bool('SECURITY_FORCE_HTTPS', false)
@@ -195,6 +195,14 @@ final class App
         }
 
         try {
+            if (str_starts_with($request->path(), '/api/')) {
+                if ($request->path() === '/api/v1/auth/login' && $request->method() === 'POST') {
+                    if (!$this->rateLimiter->hit('login:' . $request->ip(), $this->config->int('RATE_LIMIT_LOGIN_PER_15_MIN', 10), 900)) {
+                        $this->emitJsonError('rate_limited', 'Too many login attempts', 429, $correlationId);
+                        return;
+                    }
+                }
+            }
             if (str_starts_with($request->path(), '/api/')) {
                 if (!$this->rateLimiter->hit('api:' . $request->ip(), $this->config->int('RATE_LIMIT_API_PER_MIN', 120), 60)) {
                     $this->emitJsonError('rate_limited', 'Too many API requests', 429, $correlationId);
