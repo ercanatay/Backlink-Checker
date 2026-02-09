@@ -35,12 +35,23 @@ return static function (TestRunner $t): void {
         $t->assertTrue(!$service->isValidExportPath($root . '/storage/exports/nonexistent.csv'), 'Non-existent file should be rejected');
 
         // cleanup
-        unlink($root . '/storage/exports/valid.csv');
-        unlink($root . '/outside.txt');
-        rmdir($root . '/storage/exports');
+        if (file_exists($root . '/storage/exports/valid.csv')) {
+            unlink($root . '/storage/exports/valid.csv');
+        }
+        if (file_exists($root . '/outside.txt')) {
+            unlink($root . '/outside.txt');
+        }
+        if (is_dir($root . '/storage/exports')) {
+            rmdir($root . '/storage/exports');
+        }
+        if (is_dir($root . '/storage')) {
+            rmdir($root . '/storage');
+        }
         if (file_exists($root . '/db.sqlite')) {
             unlink($root . '/db.sqlite');
         }
-        rmdir($root);
+        if (is_dir($root)) {
+            rmdir($root);
+        }
     });
 };

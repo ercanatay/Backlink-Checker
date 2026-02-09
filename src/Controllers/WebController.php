@@ -390,11 +390,11 @@ final class WebController
             default => 'text/csv; charset=utf-8',
         };
 
-        $filename = basename((string) $export['file_path']);
+        $filename = basename($filePath);
 
         return new Response(
             200,
-            (string) file_get_contents((string) $export['file_path']),
+            (string) file_get_contents($filePath),
             [
                 'Content-Type' => $mime,
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',

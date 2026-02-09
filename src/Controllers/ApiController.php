@@ -244,9 +244,9 @@ final class ApiController
             default => 'text/csv; charset=utf-8',
         };
 
-        return new Response(200, (string) file_get_contents((string) $export['file_path']), [
+        return new Response(200, (string) file_get_contents($filePath), [
             'Content-Type' => $mime,
-            'Content-Disposition' => 'attachment; filename="' . basename((string) $export['file_path']) . '"',
+            'Content-Disposition' => 'attachment; filename="' . basename($filePath) . '"',
         ]);
     }
 
