@@ -226,4 +226,16 @@ final class ExportService
 
         return $name;
     }
+
+    public function isValidExportPath(string $path): bool
+    {
+        $allowedDir = realpath($this->config->string('EXPORT_ABSOLUTE_PATH'));
+        $targetPath = realpath($path);
+
+        if ($allowedDir === false || $targetPath === false) {
+            return false;
+        }
+
+        return str_starts_with($targetPath, $allowedDir . DIRECTORY_SEPARATOR);
+    }
 }

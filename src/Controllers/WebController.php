@@ -378,7 +378,8 @@ final class WebController
             $export = $this->findAccessibleExport($exportId, (int) $user['id']);
         }
 
-        if ($export === null || empty($export['file_path']) || !is_file((string) $export['file_path'])) {
+        $filePath = (string) ($export['file_path'] ?? '');
+        if ($export === null || $filePath === '' || !is_file($filePath) || !$this->exports->isValidExportPath($filePath)) {
             return Response::html($this->renderError(404, $this->t('errors.not_found')), 404);
         }
 
