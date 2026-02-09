@@ -29,11 +29,29 @@ return static function (TestRunner $t): void {
         $rootPath = dirname(__DIR__, 2);
         $app = new App($rootPath);
 
+        // EnvLoader reads .env and can override values above; detect effective limit from .env when present.
+        $effectiveLoginLimit = 2;
+        $envFile = $rootPath . '/.env';
+        if (is_file($envFile)) {
+            $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+            foreach ($lines as $line) {
+                if (preg_match('/^\\s*RATE_LIMIT_LOGIN_PER_15_MIN\\s*=\\s*(.+)\\s*$/', $line, $m) === 1) {
+                    $raw = trim($m[1]);
+                    $raw = trim($raw, "\"'");
+                    $parsed = (int) $raw;
+                    if ($parsed > 0) {
+                        $effectiveLoginLimit = $parsed;
+                    }
+                    break;
+                }
+            }
+        }
+
         // Buffer output to avoid sending headers prematurely
         ob_start();
 
         $blocked = false;
-        $attempts = 5;
+        $attempts = $effectiveLoginLimit + 5;
 
         for ($i = 1; $i <= $attempts; $i++) {
             // Mock request
@@ -51,7 +69,7 @@ return static function (TestRunner $t): void {
             $output = ob_get_clean();
 
             // Check for rate limit error in JSON
-            if (str_contains($output, '"code": "rate_limited"') || str_contains($output, 'Too many login attempts')) {
+            if (str_contains($output, '"code":"rate_limited"') || str_contains($output, 'Too many login attempts')) {
                 $blocked = true;
                 break;
             }
@@ -65,6 +83,6 @@ return static function (TestRunner $t): void {
         rmdir($tempDir);
 
         $t->assertTrue($blocked, 'Requests should be blocked after limit is exceeded');
-        $t->assertTrue($i <= 3, 'Blocking should happen at or before limit+1 attempt');
+        $t->assertTrue($i <= ($effectiveLoginLimit + 1), 'Blocking should happen at or before limit+1 attempt');
     });
 };
