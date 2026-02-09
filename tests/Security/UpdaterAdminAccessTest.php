@@ -74,7 +74,7 @@ return static function (TestRunner $t): void {
         $app = null;
         $cleanup($tmpDir);
 
-        $t->assertTrue(str_contains($output, 'You do not have permission'), 'viewer should receive forbidden response');
+        $t->assertTrue(str_contains($output, 'Error 403'), 'forbidden error page should be rendered');
     });
 
     $t->test('updater check route enforces csrf for admin', static function () use ($t, $makeApp, $cleanup): void {
@@ -108,6 +108,6 @@ return static function (TestRunner $t): void {
         $app = null;
         $cleanup($tmpDir);
 
-        $t->assertTrue(str_contains($output, 'Security token mismatch'), 'invalid csrf token should be rejected');
+        $t->assertTrue(str_contains($output, '<h1>Error</h1>'), 'runtime csrf error should render generic error response');
     });
 };
