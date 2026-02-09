@@ -232,7 +232,8 @@ final class ApiController
             'SELECT e.* FROM exports e JOIN project_members pm ON pm.project_id = e.project_id WHERE e.id = ? AND pm.user_id = ?',
             [$exportId, $user['id']]
         );
-        if ($export === null || empty($export['file_path']) || !is_file((string) $export['file_path'])) {
+        $filePath = (string) ($export['file_path'] ?? '');
+        if ($export === null || $filePath === '' || !is_file($filePath) || !$this->exports->isValidExportPath($filePath)) {
             return $this->error('not_found', 'Export not found', 404);
         }
 
@@ -243,9 +244,9 @@ final class ApiController
             default => 'text/csv; charset=utf-8',
         };
 
-        return new Response(200, (string) file_get_contents((string) $export['file_path']), [
+        return new Response(200, (string) file_get_contents($filePath), [
             'Content-Type' => $mime,
-            'Content-Disposition' => 'attachment; filename="' . basename((string) $export['file_path']) . '"',
+            'Content-Disposition' => 'attachment; filename="' . basename($filePath) . '"',
         ]);
     }
 
