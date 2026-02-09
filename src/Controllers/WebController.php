@@ -20,6 +20,7 @@ use BacklinkChecker\Services\SavedViewService;
 use BacklinkChecker\Services\ScanService;
 use BacklinkChecker\Services\ScheduleService;
 use BacklinkChecker\Services\SettingsService;
+use BacklinkChecker\Services\UpdaterService;
 use BacklinkChecker\Support\ViewRenderer;
 
 final class WebController
@@ -38,7 +39,8 @@ final class WebController
         private readonly TokenService $tokens,
         private readonly Csrf $csrf,
         private readonly Translator $translator,
-        private readonly ViewRenderer $views
+        private readonly ViewRenderer $views,
+        private readonly UpdaterService $updater
     ) {
     }
 
@@ -87,6 +89,8 @@ final class WebController
     {
         $user = $this->requireUser();
         $projects = $this->projects->listForUser((int) $user['id']);
+        $telemetry = $this->settings->get('telemetry.enabled', ['enabled' => false]);
+        $retention = $this->settings->get('retention.days', ['days' => 90]);
 
         $latestScans = [];
         if ($projects !== []) {
@@ -98,6 +102,12 @@ final class WebController
             'latestScans' => $latestScans,
             'error' => null,
             'flash' => $this->pullFlash(),
+            'settingsForm' => [
+                'telemetry_enabled' => (bool) ($telemetry['enabled'] ?? false),
+                'retention_days' => max(1, (int) ($retention['days'] ?? 90)),
+            ],
+            'updaterConfig' => $this->updater->config(),
+            'updaterState' => $this->updater->state(),
         ]));
     }
 
@@ -122,6 +132,12 @@ final class WebController
                 'latestScans' => [],
                 'error' => $e->getMessage(),
                 'flash' => null,
+                'settingsForm' => [
+                    'telemetry_enabled' => false,
+                    'retention_days' => 90,
+                ],
+                'updaterConfig' => $this->updater->config(),
+                'updaterState' => $this->updater->state(),
             ]), 422);
         }
     }
@@ -483,6 +499,46 @@ final class WebController
         return Response::redirect('/dashboard');
     }
 
+    public function postUpdaterCheck(Request $request): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        if (!$this->isAdmin($user)) {
+            return Response::html($this->renderError(403, $this->t('errors.forbidden')), 403);
+        }
+
+        $jobId = $this->updater->enqueueCheck('web');
+        if ($jobId === null) {
+            $this->flash('error', $this->t('updater.job_pending'));
+            return Response::redirect('/dashboard');
+        }
+
+        $this->audit->log((int) $user['id'], 'updater.check.requested', 'updater', (string) $jobId, [], $request->ip(), $request->userAgent());
+        $this->flash('success', $this->t('updater.check_enqueued'));
+
+        return Response::redirect('/dashboard');
+    }
+
+    public function postUpdaterApply(Request $request): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        if (!$this->isAdmin($user)) {
+            return Response::html($this->renderError(403, $this->t('errors.forbidden')), 403);
+        }
+
+        $jobId = $this->updater->enqueueApply('web');
+        if ($jobId === null) {
+            $this->flash('error', $this->t('updater.job_pending'));
+            return Response::redirect('/dashboard');
+        }
+
+        $this->audit->log((int) $user['id'], 'updater.apply.requested', 'updater', (string) $jobId, [], $request->ip(), $request->userAgent());
+        $this->flash('success', $this->t('updater.apply_enqueued'));
+
+        return Response::redirect('/dashboard');
+    }
+
     private function render(string $view, array $data = []): string
     {
         $user = $this->session->user();
@@ -563,6 +619,19 @@ final class WebController
         $locale = (string) (($this->session->user()['locale'] ?? 'en-US'));
 
         return $this->translator->trans($key, $params, $locale);
+    }
+
+    /**
+     * @param array<string, mixed> $user
+     */
+    private function isAdmin(array $user): bool
+    {
+        $roles = $user['roles'] ?? [];
+        if (!is_array($roles)) {
+            return false;
+        }
+
+        return in_array('admin', $roles, true);
     }
 
     /**

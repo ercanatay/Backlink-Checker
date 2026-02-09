@@ -6,8 +6,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../bootstrap/app.php';
 
 $app = backlink_checker_app();
-$db = $app->db();
 $schedules = $app->schedules()->dueSchedules();
+$updaterJobId = $app->updater()->enqueuePeriodicCheckIfDue();
 
 $processed = 0;
 foreach ($schedules as $schedule) {
@@ -32,4 +32,5 @@ foreach ($schedules as $schedule) {
     }
 }
 
-echo "Scheduler processed {$processed} schedule(s).\n";
+$updaterMessage = $updaterJobId !== null ? ('updater check queued (job #' . $updaterJobId . ')') : 'updater check not queued';
+echo "Scheduler processed {$processed} schedule(s); {$updaterMessage}.\n";

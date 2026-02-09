@@ -41,6 +41,7 @@ use BacklinkChecker\Services\ScheduleService;
 use BacklinkChecker\Services\SettingsService;
 use BacklinkChecker\Services\TelemetryService;
 use BacklinkChecker\Services\TokenAuthService;
+use BacklinkChecker\Services\UpdaterService;
 use BacklinkChecker\Services\WebhookService;
 use BacklinkChecker\Support\ViewRenderer;
 
@@ -60,6 +61,7 @@ final class App
     private ScheduleService $scheduleService;
     private WebhookService $webhookService;
     private RetentionService $retentionService;
+    private UpdaterService $updaterService;
     private Translator $translator;
 
     public function __construct(private readonly string $rootPath)
@@ -92,6 +94,7 @@ final class App
         $settings = new SettingsService($this->db);
         $telemetry = new TelemetryService($this->config, $this->db);
         $audit = new AuditService($this->db);
+        $updater = new UpdaterService($this->config, $this->db, $settings, $queue, $this->logger, $this->rootPath);
 
         $projectService = new ProjectService($this->db, $normalizer);
         $savedViews = new SavedViewService($this->db);
@@ -154,7 +157,8 @@ final class App
             $tokenService,
             $csrf,
             $translator,
-            $viewRenderer
+            $viewRenderer,
+            $updater
         );
 
         $this->api = new ApiController(
@@ -179,6 +183,7 @@ final class App
         $this->scheduleService = $scheduleService;
         $this->webhookService = $webhookService;
         $this->retentionService = new RetentionService($this->db, $this->config);
+        $this->updaterService = $updater;
         $this->translator = $translator;
     }
 
@@ -302,6 +307,11 @@ final class App
         return $this->translator;
     }
 
+    public function updater(): UpdaterService
+    {
+        return $this->updaterService;
+    }
+
     private function registerRoutes(): void
     {
         // Web routes
@@ -324,6 +334,8 @@ final class App
         $this->router->add('GET', '/scans/{scanId}/export', fn(Request $r, array $p) => $this->web->exportScan($r, $p));
         $this->router->add('GET', '/exports/{id}', fn(Request $r, array $p) => $this->web->downloadExport($r, $p));
         $this->router->add('POST', '/settings', fn(Request $r, array $p = []) => $this->web->saveSettings($r));
+        $this->router->add('POST', '/settings/updater/check', fn(Request $r, array $p = []) => $this->web->postUpdaterCheck($r));
+        $this->router->add('POST', '/settings/updater/apply', fn(Request $r, array $p = []) => $this->web->postUpdaterApply($r));
         $this->router->add('POST', '/api-tokens', fn(Request $r, array $p = []) => $this->web->createApiToken($r));
 
         // API routes

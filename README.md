@@ -209,8 +209,8 @@ See full details in `/docs/API.md`.
 ## Queue, Scheduler, and Retention
 
 - Scan creation enqueues `scan.run` jobs.
-- Worker processes scans and webhook delivery jobs.
-- Scheduler creates scans from due schedule rules.
+- Worker processes scans, webhook delivery, and updater jobs (`updater.check`, `updater.apply`).
+- Scheduler creates scans from due schedule rules and enqueues hourly updater checks.
 - Cleanup task purges old operational data based on retention.
 
 Commands:
@@ -219,7 +219,24 @@ Commands:
 php bin/worker.php
 php bin/scheduler.php
 php bin/cleanup.php
+php bin/updater.php status
+php bin/updater.php check
+php bin/updater.php apply
 ```
+
+## Automatic Updater
+
+- Release source: GitHub stable releases/tags (pre-release and draft are ignored).
+- Apply mode: admin-triggered update apply; periodic checks are automatic.
+- Apply pipeline: `git pull --ff-only` -> `php bin/migrate.php` -> `composer install` only when `composer.lock` changes.
+- Safety controls:
+  - updater lock file (`storage/updater/update.lock`)
+  - dirty repository guard (apply is blocked)
+  - SQLite backup before apply (`storage/updater/backups`)
+  - rollback to previous commit + DB backup restore on failure
+- Dashboard controls:
+  - `POST /settings/updater/check`
+  - `POST /settings/updater/apply`
 
 ## Exports
 

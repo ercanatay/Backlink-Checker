@@ -34,6 +34,28 @@
   </style>
 </head>
 <body>
+<?php
+$settingsForm = is_array($settingsForm ?? null) ? $settingsForm : ['retention_days' => 90, 'telemetry_enabled' => false];
+$updaterConfig = is_array($updaterConfig ?? null) ? $updaterConfig : ['enabled' => true, 'interval_minutes' => 60];
+$updaterState = is_array($updaterState ?? null) ? $updaterState : [
+  'current_version' => '',
+  'current_commit' => '',
+  'current_branch' => '',
+  'latest_version' => '',
+  'latest_url' => '',
+  'update_available' => false,
+  'last_checked_at' => '',
+  'last_check_status' => '',
+  'last_check_error' => null,
+  'last_apply_at' => '',
+  'last_apply_status' => '',
+  'last_apply_error' => null,
+  'rollback_performed' => false,
+  'restart_required' => false,
+];
+$roles = $user['roles'] ?? [];
+$isAdmin = is_array($roles) && in_array('admin', $roles, true);
+?>
 <a href="#main" class="skip-link"><?= htmlspecialchars($t('a11y.skip_to_content'), ENT_QUOTES, 'UTF-8') ?></a>
 <header>
   <div>
@@ -158,12 +180,77 @@
         </div>
         <div>
           <label for="settings-retention"><?= htmlspecialchars($t('settings.retention_days'), ENT_QUOTES, 'UTF-8') ?></label>
-          <input id="settings-retention" type="number" min="1" max="3650" name="retention_days" value="90">
+          <input id="settings-retention" type="number" min="1" max="3650" name="retention_days" value="<?= (int) ($settingsForm['retention_days'] ?? 90) ?>">
         </div>
       </div>
-      <label><input class="inline" type="checkbox" name="telemetry" value="1"> <?= htmlspecialchars($t('settings.telemetry'), ENT_QUOTES, 'UTF-8') ?></label>
+      <label><input class="inline" type="checkbox" name="telemetry" value="1" <?= !empty($settingsForm['telemetry_enabled']) ? 'checked' : '' ?>> <?= htmlspecialchars($t('settings.telemetry'), ENT_QUOTES, 'UTF-8') ?></label>
       <button type="submit"><?= htmlspecialchars($t('settings.save'), ENT_QUOTES, 'UTF-8') ?></button>
     </form>
+  </section>
+
+  <section class="panel">
+    <h2><?= htmlspecialchars($t('updater.title'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <div class="row">
+      <div>
+        <strong><?= htmlspecialchars($t('updater.current_version'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+        <span class="mono"><?= htmlspecialchars((string) ($updaterState['current_version'] ?: 'n/a'), ENT_QUOTES, 'UTF-8') ?></span>
+      </div>
+      <div>
+        <strong><?= htmlspecialchars($t('updater.latest_version'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+        <span class="mono"><?= htmlspecialchars((string) ($updaterState['latest_version'] ?: 'n/a'), ENT_QUOTES, 'UTF-8') ?></span>
+      </div>
+    </div>
+    <p>
+      <strong><?= htmlspecialchars($t('updater.update_available'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+      <?= !empty($updaterState['update_available']) ? htmlspecialchars($t('common.yes'), ENT_QUOTES, 'UTF-8') : htmlspecialchars($t('common.no'), ENT_QUOTES, 'UTF-8') ?>
+    </p>
+    <p>
+      <strong><?= htmlspecialchars($t('updater.branch_commit'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+      <?php $shortCommit = $updaterState['current_commit'] !== '' ? substr((string) $updaterState['current_commit'], 0, 12) : '-'; ?>
+      <span class="mono"><?= htmlspecialchars((string) (($updaterState['current_branch'] ?: '-') . ' @ ' . $shortCommit), ENT_QUOTES, 'UTF-8') ?></span>
+    </p>
+    <p>
+      <strong><?= htmlspecialchars($t('updater.last_check'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+      <span class="mono"><?= htmlspecialchars((string) ($updaterState['last_checked_at'] ?: 'n/a'), ENT_QUOTES, 'UTF-8') ?></span>
+      (<?= htmlspecialchars((string) ($updaterState['last_check_status'] ?: 'n/a'), ENT_QUOTES, 'UTF-8') ?>)
+    </p>
+    <p>
+      <strong><?= htmlspecialchars($t('updater.last_apply'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+      <span class="mono"><?= htmlspecialchars((string) ($updaterState['last_apply_at'] ?: 'n/a'), ENT_QUOTES, 'UTF-8') ?></span>
+      (<?= htmlspecialchars((string) ($updaterState['last_apply_status'] ?: 'n/a'), ENT_QUOTES, 'UTF-8') ?>)
+    </p>
+    <p>
+      <strong><?= htmlspecialchars($t('updater.interval_minutes'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+      <?= (int) ($updaterConfig['interval_minutes'] ?? 60) ?>
+      | <strong><?= htmlspecialchars($t('updater.enabled'), ENT_QUOTES, 'UTF-8') ?>:</strong>
+      <?= !empty($updaterConfig['enabled']) ? htmlspecialchars($t('common.yes'), ENT_QUOTES, 'UTF-8') : htmlspecialchars($t('common.no'), ENT_QUOTES, 'UTF-8') ?>
+    </p>
+    <?php if (!empty($updaterState['latest_url'])): ?>
+      <p><a href="<?= htmlspecialchars((string) $updaterState['latest_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($t('updater.latest_release_link'), ENT_QUOTES, 'UTF-8') ?></a></p>
+    <?php endif; ?>
+    <?php if (!empty($updaterState['restart_required'])): ?>
+      <p style="color:#b91c1c"><strong><?= htmlspecialchars($t('updater.restart_required'), ENT_QUOTES, 'UTF-8') ?></strong></p>
+    <?php endif; ?>
+    <?php if (!empty($updaterState['last_check_error'])): ?>
+      <p style="color:#b91c1c"><strong><?= htmlspecialchars($t('updater.last_check_error'), ENT_QUOTES, 'UTF-8') ?>:</strong> <span class="mono"><?= htmlspecialchars((string) $updaterState['last_check_error'], ENT_QUOTES, 'UTF-8') ?></span></p>
+    <?php endif; ?>
+    <?php if (!empty($updaterState['last_apply_error'])): ?>
+      <p style="color:#b91c1c"><strong><?= htmlspecialchars($t('updater.last_apply_error'), ENT_QUOTES, 'UTF-8') ?>:</strong> <span class="mono"><?= htmlspecialchars((string) $updaterState['last_apply_error'], ENT_QUOTES, 'UTF-8') ?></span></p>
+    <?php endif; ?>
+    <?php if ($isAdmin): ?>
+      <div class="row">
+        <form method="post" action="/settings/updater/check">
+          <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+          <button type="submit"><?= htmlspecialchars($t('updater.check_now'), ENT_QUOTES, 'UTF-8') ?></button>
+        </form>
+        <form method="post" action="/settings/updater/apply">
+          <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+          <button type="submit"><?= htmlspecialchars($t('updater.apply_now'), ENT_QUOTES, 'UTF-8') ?></button>
+        </form>
+      </div>
+    <?php else: ?>
+      <p><?= htmlspecialchars($t('updater.admin_only'), ENT_QUOTES, 'UTF-8') ?></p>
+    <?php endif; ?>
   </section>
 
   <section class="panel">

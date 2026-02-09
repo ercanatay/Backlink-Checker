@@ -12,7 +12,7 @@ Services:
 - `web` (Nginx on `:8080`)
 - `app` (PHP-FPM)
 - `worker` (queue consumer)
-- `scheduler` (recurring schedule trigger)
+- `scheduler` (recurring schedule trigger + periodic updater check enqueue)
 
 ## Option B: Shared hosting
 1. Upload repository files.
@@ -24,3 +24,9 @@ Services:
    - `* * * * * php /path/to/bin/scheduler.php`
    - `* * * * * php /path/to/bin/worker.php 20`
    - `0 3 * * * php /path/to/bin/cleanup.php`
+
+## Updater requirements
+- Deployment path must be a valid git working tree with `origin` configured.
+- `worker` and `scheduler` processes must run continuously for automatic updater checks.
+- Updater apply is admin-triggered from dashboard or `php bin/updater.php apply`.
+- On successful apply, restart application background processes (worker/scheduler) to load latest code.

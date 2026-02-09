@@ -68,6 +68,28 @@ while (true) {
             continue;
         }
 
+        if ((string) $job['type'] === 'updater.check') {
+            $result = $app->updater()->runCheck();
+            $queue->complete((int) $job['id']);
+            $logger->info('worker.updater.check.completed', [
+                'job_id' => (int) $job['id'],
+                'status' => (string) ($result['status'] ?? 'unknown'),
+                'ok' => (bool) ($result['ok'] ?? false),
+            ]);
+            continue;
+        }
+
+        if ((string) $job['type'] === 'updater.apply') {
+            $result = $app->updater()->runApply();
+            $queue->complete((int) $job['id']);
+            $logger->info('worker.updater.apply.completed', [
+                'job_id' => (int) $job['id'],
+                'status' => (string) ($result['status'] ?? 'unknown'),
+                'ok' => (bool) ($result['ok'] ?? false),
+            ]);
+            continue;
+        }
+
         $queue->complete((int) $job['id']);
     } catch (Throwable $e) {
         $queue->fail((int) $job['id'], $e->getMessage());
