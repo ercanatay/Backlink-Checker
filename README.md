@@ -2,6 +2,12 @@
 
 Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team scale. It includes asynchronous scans, RBAC, API access, scheduling, alerts, export pipelines, and 10-language localization (including Turkish).
 
+## Latest Release (v2.1.2 - 2026-02-09)
+
+- Fixed a high-severity path traversal risk in export downloads by validating that resolved files remain inside the configured export directory.
+- Updated web and API export download handlers to serve the exact path that was validated.
+- Improved export-path unit test cleanup to avoid leftover temporary directories.
+
 ## Highlights
 
 - Modular architecture with clear domain/service/controller separation
