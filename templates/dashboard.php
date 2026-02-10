@@ -281,6 +281,25 @@ $isAdmin = is_array($roles) && in_array('admin', $roles, true);
       }
     }
   });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('form').forEach(form => {
+      form.addEventListener('submit', (e) => {
+        if (e.defaultPrevented) return;
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+          if (form.dataset.submitting) {
+            e.preventDefault();
+            return;
+          }
+          form.dataset.submitting = 'true';
+          btn.style.opacity = '0.7';
+          btn.style.cursor = 'not-allowed';
+          btn.textContent += '...';
+        }
+      });
+    });
+  });
 </script>
 </body>
 </html>
