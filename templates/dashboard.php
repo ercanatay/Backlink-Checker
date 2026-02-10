@@ -271,6 +271,7 @@ $isAdmin = is_array($roles) && in_array('admin', $roles, true);
     </form>
   </section>
 </main>
+<?php require __DIR__ . '/partials/form_submit_feedback.php'; ?>
 <script>
   document.addEventListener('keydown', (event) => {
     if (event.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {

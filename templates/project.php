@@ -193,5 +193,6 @@
     <?php endif; ?>
   </section>
 </main>
+<?php require __DIR__ . '/partials/form_submit_feedback.php'; ?>
 </body>
 </html>

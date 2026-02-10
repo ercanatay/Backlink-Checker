@@ -7,3 +7,4 @@
 !/storage/exports/.gitkeep
 /.phpunit.result.cache
 .DS_Store
+/server.log

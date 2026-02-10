@@ -38,7 +38,7 @@
     <form method="post" action="/login">
       <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
       <label for="email"><?= htmlspecialchars($t('auth.email'), ENT_QUOTES, 'UTF-8') ?></label>
-      <input id="email" type="email" name="email" autocomplete="username" required>
+      <input id="email" type="email" name="email" autocomplete="username" required autofocus>
 
       <label for="password"><?= htmlspecialchars($t('auth.password'), ENT_QUOTES, 'UTF-8') ?></label>
       <input id="password" type="password" name="password" autocomplete="current-password" required>
@@ -49,5 +49,6 @@
     <p class="meta">Default bootstrap admin comes from <code>.env</code>. Change it before production use.</p>
   </section>
 </main>
+<?php require __DIR__ . '/partials/form_submit_feedback.php'; ?>
 </body>
 </html>
