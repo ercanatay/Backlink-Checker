@@ -6,6 +6,7 @@ namespace BacklinkChecker\Services;
 
 use BacklinkChecker\Config\Config;
 use BacklinkChecker\Database\Database;
+use BacklinkChecker\Security\SsrfGuard;
 
 final class NotificationService
 {
@@ -71,13 +72,21 @@ final class NotificationService
      */
     private function sendEmail(string $destination, array $payload): void
     {
+        // Prevent email header injection by stripping newlines from destination and From header
+        $destination = preg_replace('/[\r\n]/', '', $destination);
+        if (!filter_var($destination, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $from = preg_replace('/[\r\n]/', '', $this->config->string('SMTP_FROM', 'noreply@example.com'));
+
         $subject = '[Backlink Checker] Scan completed #' . ($payload['scan']['id'] ?? '');
         $body = "Scan #" . ($payload['scan']['id'] ?? '') . " completed with status: " . ($payload['scan']['status'] ?? '')
             . "\nProcessed: " . ($payload['scan']['processed_targets'] ?? 0) . "/" . ($payload['scan']['total_targets'] ?? 0)
             . "\nFinished: " . ($payload['scan']['finished_at'] ?? '');
 
         if (function_exists('mail')) {
-            @mail($destination, $subject, $body, 'From: ' . $this->config->string('SMTP_FROM', 'noreply@example.com'));
+            @mail($destination, $subject, $body, 'From: ' . $from);
         }
     }
 
@@ -88,6 +97,12 @@ final class NotificationService
     {
         $url = trim($destination) !== '' ? $destination : $this->config->string('SLACK_WEBHOOK_URL');
         if ($url === '') {
+            return;
+        }
+
+        try {
+            SsrfGuard::assertExternalUrl($url);
+        } catch (\InvalidArgumentException) {
             return;
         }
 

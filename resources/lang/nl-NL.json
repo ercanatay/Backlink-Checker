@@ -16,6 +16,7 @@
     "auth.login_title": "Log in op je workspace",
     "auth.email": "E-mail",
     "auth.password": "Wachtwoord",
+    "auth.login_hint": "Voer uw gegevens in om door te gaan.",
     "auth.submit": "Inloggen",
     "auth.failed": "Ongeldig e-mailadres of wachtwoord.",
     "auth.remember": "Ingelogd blijven",

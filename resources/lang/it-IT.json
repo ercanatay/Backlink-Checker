@@ -16,6 +16,7 @@
     "auth.login_title": "Accedi al tuo workspace",
     "auth.email": "Email",
     "auth.password": "Password",
+    "auth.login_hint": "Inserisci le tue credenziali per continuare.",
     "auth.submit": "Accedi",
     "auth.failed": "Email o password non validi.",
     "auth.remember": "Resta connesso",

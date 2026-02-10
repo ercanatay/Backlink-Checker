@@ -41,7 +41,7 @@ final class WebhookService
             $payload,
             [
                 'X-Backlink-Signature' => $signature,
-                'X-Backlink-Event' => 'scan.completed',
+                'X-Backlink-Event' => (string) ($payload['event'] ?? 'scan.completed'),
                 'X-Backlink-Attempt' => (string) $attempt,
             ]
         );

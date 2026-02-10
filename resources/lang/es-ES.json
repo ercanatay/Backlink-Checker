@@ -16,6 +16,7 @@
     "auth.login_title": "Inicia sesión en tu espacio de trabajo",
     "auth.email": "Correo electrónico",
     "auth.password": "Contraseña",
+    "auth.login_hint": "Introduzca sus credenciales para continuar.",
     "auth.submit": "Entrar",
     "auth.failed": "Correo o contraseña inválidos.",
     "auth.remember": "Mantener sesión iniciada",

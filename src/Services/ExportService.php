@@ -54,25 +54,25 @@ final class ExportService
         $filename = 'scan_' . $export['scan_id'] . '_export_' . $exportId . '.' . $export['format'];
         $path = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $filename;
 
-        switch ($export['format']) {
-            case 'csv':
-                $this->writeCsv($path, $rows, ',');
-                break;
-            case 'txt':
-                $this->writeCsv($path, $rows, "\t");
-                break;
-            case 'json':
-                file_put_contents($path, json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-                break;
-            case 'xlsx':
-                $this->writeXlsx($path, $rows);
-                break;
-        }
+        $written = match ($export['format']) {
+            'csv' => $this->writeCsv($path, $rows, ','),
+            'txt' => $this->writeCsv($path, $rows, "\t"),
+            'json' => file_put_contents($path, json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) !== false,
+            'xlsx' => $this->writeXlsx($path, $rows),
+            default => false,
+        };
 
-        $this->db->execute(
-            'UPDATE exports SET status = ?, file_path = ?, completed_at = ? WHERE id = ?',
-            ['ready', $path, gmdate('c'), $exportId]
-        );
+        if ($written && is_file($path)) {
+            $this->db->execute(
+                'UPDATE exports SET status = ?, file_path = ?, completed_at = ? WHERE id = ?',
+                ['ready', $path, gmdate('c'), $exportId]
+            );
+        } else {
+            $this->db->execute(
+                'UPDATE exports SET status = ?, completed_at = ? WHERE id = ?',
+                ['failed', gmdate('c'), $exportId]
+            );
+        }
     }
 
     /**
@@ -86,11 +86,11 @@ final class ExportService
     /**
      * @param array<int, array<string, mixed>> $rows
      */
-    private function writeCsv(string $path, array $rows, string $delimiter): void
+    private function writeCsv(string $path, array $rows, string $delimiter): bool
     {
         $fh = fopen($path, 'wb');
         if ($fh === false) {
-            return;
+            return false;
         }
 
         $headers = ['Source URL', 'Source Domain', 'Final URL', 'HTTP Status', 'Meta Noindex', 'X-Robots Noindex', 'Backlink', 'Link Type', 'Anchor Text', 'DA', 'PA', 'Error'];
@@ -114,12 +114,13 @@ final class ExportService
         }
 
         fclose($fh);
+        return true;
     }
 
     /**
      * @param array<int, array<string, mixed>> $rows
      */
-    private function writeXlsx(string $path, array $rows): void
+    private function writeXlsx(string $path, array $rows): bool
     {
         $headers = ['Source URL', 'Source Domain', 'Final URL', 'HTTP Status', 'Meta Noindex', 'X-Robots Noindex', 'Backlink', 'Link Type', 'Anchor Text', 'DA', 'PA', 'Error'];
 
@@ -144,7 +145,7 @@ final class ExportService
 
         $zip = new \ZipArchive();
         if ($zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return;
+            return false;
         }
 
         $zip->addFromString('[Content_Types].xml', $this->contentTypesXml());
@@ -153,6 +154,7 @@ final class ExportService
         $zip->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelsXml());
         $zip->addFromString('xl/worksheets/sheet1.xml', $this->sheetXml($sheetRows));
         $zip->close();
+        return true;
     }
 
     private function contentTypesXml(): string

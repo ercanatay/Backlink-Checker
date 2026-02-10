@@ -16,6 +16,7 @@
     "auth.login_title": "Çalışma alanına giriş yap",
     "auth.email": "E-posta",
     "auth.password": "Şifre",
+    "auth.login_hint": "Devam etmek için kimlik bilgilerinizi girin.",
     "auth.submit": "Giriş",
     "auth.failed": "E-posta veya şifre hatalı.",
     "auth.remember": "Oturumu açık tut",

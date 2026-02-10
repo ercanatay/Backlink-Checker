@@ -46,7 +46,7 @@
       <button type="submit"><?= htmlspecialchars($t('auth.submit'), ENT_QUOTES, 'UTF-8') ?></button>
     </form>
 
-    <p class="meta">Default bootstrap admin comes from <code>.env</code>. Change it before production use.</p>
+    <p class="meta"><?= htmlspecialchars($t('auth.login_hint'), ENT_QUOTES, 'UTF-8') ?></p>
   </section>
 </main>
 <?php require __DIR__ . '/partials/form_submit_feedback.php'; ?>

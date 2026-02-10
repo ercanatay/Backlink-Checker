@@ -13,6 +13,7 @@ use BacklinkChecker\Services\ExportService;
 use BacklinkChecker\Services\ProjectService;
 use BacklinkChecker\Services\ScanService;
 use BacklinkChecker\Services\ScheduleService;
+use BacklinkChecker\Exceptions\ValidationException;
 use BacklinkChecker\Services\TokenAuthService;
 use BacklinkChecker\Services\WebhookService;
 
@@ -74,8 +75,10 @@ final class ApiController
             );
 
             return Response::json(['project_id' => $projectId], 201);
-        } catch (\Throwable $e) {
+        } catch (ValidationException $e) {
             return $this->error('validation_error', $e->getMessage(), 422);
+        } catch (\Throwable) {
+            return $this->error('server_error', 'Unexpected server error', 500);
         }
     }
 
@@ -108,8 +111,10 @@ final class ApiController
             );
 
             return Response::json(['scan_id' => $scanId], 202);
-        } catch (\Throwable $e) {
+        } catch (ValidationException $e) {
             return $this->error('validation_error', $e->getMessage(), 422);
+        } catch (\Throwable) {
+            return $this->error('server_error', 'Unexpected server error', 500);
         }
     }
 
@@ -215,8 +220,10 @@ final class ApiController
             );
 
             return Response::json(['schedule_id' => $scheduleId], 201);
-        } catch (\Throwable $e) {
+        } catch (ValidationException $e) {
             return $this->error('validation_error', $e->getMessage(), 422);
+        } catch (\Throwable) {
+            return $this->error('server_error', 'Unexpected server error', 500);
         }
     }
 

@@ -16,6 +16,7 @@
     "auth.login_title": "Вход в рабочее пространство",
     "auth.email": "Email",
     "auth.password": "Пароль",
+    "auth.login_hint": "Введите свои учётные данные для продолжения.",
     "auth.submit": "Войти",
     "auth.failed": "Неверный email или пароль.",
     "auth.remember": "Запомнить меня",
