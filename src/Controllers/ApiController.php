@@ -8,13 +8,19 @@ use BacklinkChecker\Database\Database;
 use BacklinkChecker\Http\Request;
 use BacklinkChecker\Http\Response;
 use BacklinkChecker\Security\TokenService;
+use BacklinkChecker\Services\AnchorAnalysisService;
 use BacklinkChecker\Services\AuthService;
+use BacklinkChecker\Services\CompetitorService;
+use BacklinkChecker\Services\DisavowService;
 use BacklinkChecker\Services\ExportService;
+use BacklinkChecker\Services\HealthScoreService;
+use BacklinkChecker\Services\ImportService;
 use BacklinkChecker\Services\ProjectService;
 use BacklinkChecker\Services\ScanService;
 use BacklinkChecker\Services\ScheduleService;
 use BacklinkChecker\Exceptions\ValidationException;
 use BacklinkChecker\Services\TokenAuthService;
+use BacklinkChecker\Services\VelocityService;
 use BacklinkChecker\Services\WebhookService;
 
 final class ApiController
@@ -28,7 +34,13 @@ final class ApiController
         private readonly ScheduleService $schedules,
         private readonly ExportService $exports,
         private readonly WebhookService $webhooks,
-        private readonly Database $db
+        private readonly Database $db,
+        private readonly CompetitorService $competitors,
+        private readonly HealthScoreService $healthScore,
+        private readonly DisavowService $disavow,
+        private readonly AnchorAnalysisService $anchors,
+        private readonly VelocityService $velocity,
+        private readonly ImportService $imports
     ) {
     }
 
@@ -279,6 +291,242 @@ final class ApiController
         ]);
 
         return Response::json($result, $result['success'] ? 200 : 502);
+    }
+
+    // ── API v2 endpoints ──
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function showScanV2(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['scans:read']);
+        $scanId = (int) ($params['scanId'] ?? 0);
+        $scan = $this->scans->findScan($scanId);
+        if ($scan === null) {
+            return $this->error('not_found', 'Scan not found', 404);
+        }
+        $project = $this->projects->findForUser((int) $scan['project_id'], (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $health = $this->healthScore->getForScan($scanId);
+
+        return Response::json([
+            'scan' => $scan,
+            'health_score' => $health,
+            'api_version' => 'v2',
+        ]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function scanResultsV2(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['scans:read']);
+        $scanId = (int) ($params['scanId'] ?? 0);
+        $scan = $this->scans->findScan($scanId);
+        if ($scan === null) {
+            return $this->error('not_found', 'Scan not found', 404);
+        }
+        $project = $this->projects->findForUser((int) $scan['project_id'], (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $page = max(1, (int) ($request->query['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($request->query['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+
+        $filters = [
+            'status' => (string) ($request->query['status'] ?? ''),
+            'link_type' => (string) ($request->query['link_type'] ?? ''),
+            'search' => (string) ($request->query['search'] ?? ''),
+            'sort' => (string) ($request->query['sort'] ?? 'id_desc'),
+        ];
+
+        $allResults = $this->scans->results($scanId, $filters);
+        $total = count($allResults);
+        $pagedResults = array_slice($allResults, $offset, $perPage);
+
+        return Response::json([
+            'scan_id' => $scanId,
+            'results' => $pagedResults,
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'total_pages' => (int) ceil($total / $perPage),
+            ],
+            'api_version' => 'v2',
+        ]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function scanHealth(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['scans:read']);
+        $scanId = (int) ($params['scanId'] ?? 0);
+        $scan = $this->scans->findScan($scanId);
+        if ($scan === null) {
+            return $this->error('not_found', 'Scan not found', 404);
+        }
+        $project = $this->projects->findForUser((int) $scan['project_id'], (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $health = $this->healthScore->getForScan($scanId);
+        return Response::json(['scan_id' => $scanId, 'health' => $health]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function scanAnchors(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['scans:read']);
+        $scanId = (int) ($params['scanId'] ?? 0);
+        $scan = $this->scans->findScan($scanId);
+        if ($scan === null) {
+            return $this->error('not_found', 'Scan not found', 404);
+        }
+        $project = $this->projects->findForUser((int) $scan['project_id'], (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $anchors = $this->anchors->getForScan($scanId);
+        return Response::json(['scan_id' => $scanId, 'anchors' => $anchors]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function scanVelocity(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['scans:read']);
+        $scanId = (int) ($params['scanId'] ?? 0);
+        $scan = $this->scans->findScan($scanId);
+        if ($scan === null) {
+            return $this->error('not_found', 'Scan not found', 404);
+        }
+        $project = $this->projects->findForUser((int) $scan['project_id'], (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $velocity = $this->velocity->getProjectHistory((int) $scan['project_id']);
+        return Response::json(['project_id' => (int) $scan['project_id'], 'velocity' => $velocity]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function listCompetitors(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['projects:read']);
+        $projectId = (int) ($params['projectId'] ?? 0);
+        $project = $this->projects->findForUser($projectId, (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        return Response::json(['competitors' => $this->competitors->listByProject($projectId)]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function addCompetitor(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['projects:write']);
+        $projectId = (int) ($params['projectId'] ?? 0);
+        $project = $this->projects->findForUser($projectId, (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $payload = $request->isJson() ? $request->json() : $request->post;
+        try {
+            $id = $this->competitors->addCompetitor($projectId, (int) $user['id'], (string) ($payload['domain'] ?? ''));
+            return Response::json(['competitor_id' => $id], 201);
+        } catch (ValidationException $e) {
+            return $this->error('validation_error', $e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function listDisavow(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['projects:read']);
+        $projectId = (int) ($params['projectId'] ?? 0);
+        $project = $this->projects->findForUser($projectId, (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        return Response::json(['rules' => $this->disavow->listByProject($projectId)]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function addDisavow(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['projects:write']);
+        $projectId = (int) ($params['projectId'] ?? 0);
+        $project = $this->projects->findForUser($projectId, (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $payload = $request->isJson() ? $request->json() : $request->post;
+        try {
+            $id = $this->disavow->addRule(
+                $projectId,
+                (int) $user['id'],
+                (string) ($payload['rule_type'] ?? 'domain'),
+                (string) ($payload['value'] ?? ''),
+                (string) ($payload['reason'] ?? '')
+            );
+            return Response::json(['rule_id' => $id], 201);
+        } catch (ValidationException $e) {
+            return $this->error('validation_error', $e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function importUrls(Request $request, array $params): Response
+    {
+        $user = $this->requireTokenUser($request, ['scans:write']);
+        $projectId = (int) ($params['projectId'] ?? 0);
+        $project = $this->projects->findForUser($projectId, (int) $user['id']);
+        if ($project === null) {
+            return $this->error('forbidden', 'Project access denied', 403);
+        }
+
+        $payload = $request->isJson() ? $request->json() : $request->post;
+        try {
+            $result = $this->imports->importFromCsv(
+                $projectId,
+                (int) $user['id'],
+                (string) $project['root_domain'],
+                (string) ($payload['csv_data'] ?? ''),
+                (string) ($payload['provider'] ?? 'moz')
+            );
+            return Response::json($result, 202);
+        } catch (ValidationException $e) {
+            return $this->error('validation_error', $e->getMessage(), 422);
+        }
     }
 
     /**

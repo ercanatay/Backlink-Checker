@@ -1,12 +1,12 @@
-# Backlink Checker Pro v2
+# Backlink Checker Pro v3
 
-Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team scale. It includes asynchronous scans, RBAC, API access, scheduling, alerts, export pipelines, and 10-language localization (including Turkish).
+Backlink Checker Pro v3 is a modular PHP platform for backlink auditing at team scale. It includes asynchronous scans, RBAC, API access, scheduling, alerts, export pipelines, 10-language localization (including Turkish), and 15 new professional features added in v3.0.0.
 
-## Latest Release (v2.1.5 - 2026-02-10)
+## Latest Release (v3.0.0 - 2026-02-10)
 
-- Added SSRF validation to `HttpClient` request paths (`GET` and `POST`) to block private/internal targets.
-- Ensured redirect-following scans stay protected by validating every resolved hop before network access.
-- Added regression coverage to verify analyzer requests to internal addresses are blocked safely.
+15 new features: competitor backlink analysis, backlink health scoring, Google Disavow file generator, anchor text analysis, link velocity tracking, bulk URL import, Ahrefs/SEMrush/Majestic provider adapters, dashboard charts support, two-factor authentication (TOTP), scheduled email reports, robots.txt detailed analysis, webhook event enrichment, user activity dashboard, dark mode, and REST API v2 with pagination.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ## Highlights
 
@@ -16,7 +16,7 @@ Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team 
 - Queue-based scan execution with retries and dead-letter behavior
 - Team RBAC (`admin`, `editor`, `viewer`)
 - CSRF protection, hardened sessions, API token scopes, rate limiting
-- Moz provider adapter with cache TTL and health metadata
+- Multi-provider support: Moz, Ahrefs, SEMrush, Majestic with cache TTL
 - Backlink extraction with robust URL normalization and host-equivalent matching
 - Robots noindex detection from meta and `X-Robots-Tag`
 - Multi-link capture per result and link relation classification
@@ -29,8 +29,20 @@ Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team 
 - Opt-in telemetry and configurable retention cleanup
 - i18n catalogs with fallback and RTL support for Arabic
 - Balanced CI quality gates with lint + automated tests
+- **NEW:** Competitor backlink analysis per project
+- **NEW:** Backlink health scoring with trend tracking
+- **NEW:** Google Disavow file generator
+- **NEW:** Anchor text distribution analysis with over-optimization alerts
+- **NEW:** Link velocity tracking (gained/lost per scan)
+- **NEW:** Bulk URL import from CSV/Sitemap
+- **NEW:** Ahrefs, SEMrush, Majestic metric providers
+- **NEW:** Two-factor authentication (TOTP) with recovery codes
+- **NEW:** Scheduled email reports (daily/weekly/monthly)
+- **NEW:** User activity log dashboard with filtering and export
+- **NEW:** Dark mode (light/dark theme preference)
+- **NEW:** REST API v2 with pagination, filtering, and new endpoints
 
-## Professional Feature Matrix (40)
+## Professional Feature Matrix (55)
 
 1. Modular app architecture
 2. Composer autoloading (PSR-4)
@@ -57,7 +69,7 @@ Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team 
 23. Link type classification (`dofollow/nofollow/ugc/sponsored`)
 24. Multi-link capture
 25. Redirect chain + final status capture
-26. Moz-first provider abstraction
+26. Multi-provider abstraction (Moz, Ahrefs, SEMrush, Majestic)
 27. Provider cache TTL
 28. Scan trend reporting
 29. Advanced result filtering/sorting + saved views
@@ -72,6 +84,21 @@ Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team 
 38. 10-language localization + fallback
 39. Arabic RTL support
 40. Accessibility and keyboard-first UX affordances
+41. Competitor backlink analysis
+42. Backlink health scoring
+43. Google Disavow file generator
+44. Anchor text distribution analysis
+45. Link velocity tracking
+46. Bulk URL import (CSV/Sitemap)
+47. Two-factor authentication (TOTP)
+48. Scheduled email reports
+49. User activity log dashboard
+50. Dark mode / theme selection
+51. REST API v2 with pagination
+52. Webhook event enrichment
+53. Robots.txt detailed analysis support
+54. Activity log filtering and CSV export
+55. Report schedule management
 
 ## Supported Locales
 
@@ -105,9 +132,9 @@ src/
   Domain/              # enums + URL/link domain logic
   Http/                # request/response/router/session/rate limiter
   I18n/                # translator + locale detection
-  Providers/           # metrics provider adapters (Moz)
-  Security/            # CSRF/token/password services
-  Services/            # scan queue/export/schedule/notification logic
+  Providers/           # metrics provider adapters (Moz, Ahrefs, SEMrush, Majestic)
+  Security/            # CSRF/token/password/2FA services
+  Services/            # scan/competitor/health/disavow/velocity/import/report logic
 templates/             # server-rendered UI
 resources/lang/        # 10 locale catalogs
 migrations/            # SQL schema
@@ -210,6 +237,21 @@ Base: `/api/v1`
 - `GET /exports/{exportId}`
 - `POST /webhooks/test`
 
+## API v2 (New)
+
+Base: `/api/v2`
+
+- `GET /scans/{scanId}` — Scan details + health score
+- `GET /scans/{scanId}/results` — Paginated results with filtering
+- `GET /scans/{scanId}/health` — Health score for scan
+- `GET /scans/{scanId}/anchors` — Anchor text analysis
+- `GET /scans/{scanId}/velocity` — Link velocity data
+- `GET /projects/{projectId}/competitors` — List competitors
+- `POST /projects/{projectId}/competitors` — Add competitor
+- `GET /projects/{projectId}/disavow` — List disavow rules
+- `POST /projects/{projectId}/disavow` — Add disavow rule
+- `POST /projects/{projectId}/import` — Bulk import URLs
+
 See full details in `/docs/API.md`.
 
 ## Queue, Scheduler, and Retention
@@ -288,6 +330,9 @@ CI pipeline:
 - `SESSION_*`, `COOKIE_*`, `SECURITY_FORCE_HTTPS`
 - `RATE_LIMIT_LOGIN_PER_15_MIN`, `RATE_LIMIT_API_PER_MIN`
 - `MOZ_ACCESS_ID`, `MOZ_SECRET_KEY`, `MOZ_API_ENDPOINT`
+- `AHREFS_API_KEY`, `AHREFS_API_ENDPOINT`, `AHREFS_CACHE_TTL_SECONDS`
+- `SEMRUSH_API_KEY`, `SEMRUSH_API_ENDPOINT`, `SEMRUSH_CACHE_TTL_SECONDS`
+- `MAJESTIC_API_KEY`, `MAJESTIC_API_ENDPOINT`, `MAJESTIC_CACHE_TTL_SECONDS`
 - `SCAN_*`, `QUEUE_*`
 - `RETENTION_DAYS`
 - `WEBHOOK_SIGNING_SECRET`, `SLACK_WEBHOOK_URL`, `SMTP_FROM`

@@ -21,19 +21,29 @@ use BacklinkChecker\Http\SessionManager;
 use BacklinkChecker\I18n\LocaleDetector;
 use BacklinkChecker\I18n\Translator;
 use BacklinkChecker\Logging\JsonLogger;
+use BacklinkChecker\Providers\AhrefsMetricsProvider;
+use BacklinkChecker\Providers\MajesticMetricsProvider;
 use BacklinkChecker\Providers\MozMetricsProvider;
+use BacklinkChecker\Providers\SemrushMetricsProvider;
 use BacklinkChecker\Security\Csrf;
 use BacklinkChecker\Security\PasswordHasher;
 use BacklinkChecker\Security\TokenService;
+use BacklinkChecker\Services\ActivityService;
+use BacklinkChecker\Services\AnchorAnalysisService;
 use BacklinkChecker\Services\AuditService;
 use BacklinkChecker\Services\AuthService;
 use BacklinkChecker\Services\BacklinkAnalyzerService;
+use BacklinkChecker\Services\CompetitorService;
+use BacklinkChecker\Services\DisavowService;
 use BacklinkChecker\Services\ExportService;
+use BacklinkChecker\Services\HealthScoreService;
 use BacklinkChecker\Services\HttpClient;
+use BacklinkChecker\Services\ImportService;
 use BacklinkChecker\Services\NotificationService;
 use BacklinkChecker\Services\ProjectService;
 use BacklinkChecker\Services\ProviderCacheService;
 use BacklinkChecker\Services\QueueService;
+use BacklinkChecker\Services\ReportService;
 use BacklinkChecker\Services\RetentionService;
 use BacklinkChecker\Services\SavedViewService;
 use BacklinkChecker\Services\ScanService;
@@ -41,7 +51,9 @@ use BacklinkChecker\Services\ScheduleService;
 use BacklinkChecker\Services\SettingsService;
 use BacklinkChecker\Services\TelemetryService;
 use BacklinkChecker\Services\TokenAuthService;
+use BacklinkChecker\Services\TwoFactorService;
 use BacklinkChecker\Services\UpdaterService;
+use BacklinkChecker\Services\VelocityService;
 use BacklinkChecker\Services\WebhookService;
 use BacklinkChecker\Support\ViewRenderer;
 
@@ -63,6 +75,10 @@ final class App
     private RetentionService $retentionService;
     private UpdaterService $updaterService;
     private Translator $translator;
+    private ReportService $reportService;
+    private HealthScoreService $healthScoreService;
+    private VelocityService $velocityService;
+    private AnchorAnalysisService $anchorAnalysisService;
 
     public function __construct(private readonly string $rootPath)
     {
@@ -89,6 +105,9 @@ final class App
         $http = new HttpClient($this->config);
         $providerCache = new ProviderCacheService($this->db);
         $mozProvider = new MozMetricsProvider($this->config, $http, $providerCache);
+        $ahrefsProvider = new AhrefsMetricsProvider($this->config, $http, $providerCache);
+        $semrushProvider = new SemrushMetricsProvider($this->config, $http, $providerCache);
+        $majesticProvider = new MajesticMetricsProvider($this->config, $http, $providerCache);
 
         $queue = new QueueService($this->db, $this->config);
         $settings = new SettingsService($this->db);
@@ -119,6 +138,17 @@ final class App
         $tokenAuth = new TokenAuthService($tokenService, $auth);
 
         $webhookService = new WebhookService($http, $this->db, $this->config);
+
+        // New feature services
+        $competitorService = new CompetitorService($this->db);
+        $healthScoreService = new HealthScoreService($this->db);
+        $disavowService = new DisavowService($this->db);
+        $anchorAnalysisService = new AnchorAnalysisService($this->db);
+        $velocityService = new VelocityService($this->db);
+        $importService = new ImportService($normalizer, $scanService);
+        $reportService = new ReportService($this->db, $this->config);
+        $twoFactorService = new TwoFactorService($this->db);
+        $activityService = new ActivityService($this->db);
 
         $localeDetector = new LocaleDetector();
         $supportedLocales = [
@@ -158,7 +188,16 @@ final class App
             $csrf,
             $translator,
             $viewRenderer,
-            $updater
+            $updater,
+            $competitorService,
+            $healthScoreService,
+            $disavowService,
+            $anchorAnalysisService,
+            $velocityService,
+            $importService,
+            $reportService,
+            $twoFactorService,
+            $activityService
         );
 
         $this->api = new ApiController(
@@ -170,7 +209,13 @@ final class App
             $scheduleService,
             $exports,
             $webhookService,
-            $this->db
+            $this->db,
+            $competitorService,
+            $healthScoreService,
+            $disavowService,
+            $anchorAnalysisService,
+            $velocityService,
+            $importService
         );
 
         $this->router = new Router();
@@ -185,6 +230,10 @@ final class App
         $this->retentionService = new RetentionService($this->db, $this->config);
         $this->updaterService = $updater;
         $this->translator = $translator;
+        $this->reportService = $reportService;
+        $this->healthScoreService = $healthScoreService;
+        $this->velocityService = $velocityService;
+        $this->anchorAnalysisService = $anchorAnalysisService;
     }
 
     public function run(?Request $request = null): void
@@ -317,6 +366,26 @@ final class App
         return $this->updaterService;
     }
 
+    public function reports(): ReportService
+    {
+        return $this->reportService;
+    }
+
+    public function healthScore(): HealthScoreService
+    {
+        return $this->healthScoreService;
+    }
+
+    public function velocity(): VelocityService
+    {
+        return $this->velocityService;
+    }
+
+    public function anchorAnalysis(): AnchorAnalysisService
+    {
+        return $this->anchorAnalysisService;
+    }
+
     private function registerRoutes(): void
     {
         // Web routes
@@ -343,6 +412,28 @@ final class App
         $this->router->add('POST', '/settings/updater/apply', fn(Request $r, array $p = []) => $this->web->postUpdaterApply($r));
         $this->router->add('POST', '/api-tokens', fn(Request $r, array $p = []) => $this->web->createApiToken($r));
 
+        // Competitor routes
+        $this->router->add('POST', '/projects/{id}/competitors', fn(Request $r, array $p) => $this->web->addCompetitor($r, $p));
+        $this->router->add('POST', '/projects/{id}/competitors/delete', fn(Request $r, array $p) => $this->web->removeCompetitor($r, $p));
+
+        // Disavow routes
+        $this->router->add('POST', '/projects/{id}/disavow', fn(Request $r, array $p) => $this->web->addDisavowRule($r, $p));
+        $this->router->add('POST', '/projects/{id}/disavow/delete', fn(Request $r, array $p) => $this->web->removeDisavowRule($r, $p));
+        $this->router->add('GET', '/projects/{id}/disavow/download', fn(Request $r, array $p) => $this->web->downloadDisavowFile($r, $p));
+
+        // Import route
+        $this->router->add('POST', '/projects/{id}/import', fn(Request $r, array $p) => $this->web->importUrls($r, $p));
+
+        // Report routes
+        $this->router->add('POST', '/projects/{id}/reports', fn(Request $r, array $p) => $this->web->createReport($r, $p));
+
+        // 2FA routes
+        $this->router->add('POST', '/settings/2fa/enable', fn(Request $r, array $p = []) => $this->web->enable2fa($r));
+        $this->router->add('POST', '/settings/2fa/disable', fn(Request $r, array $p = []) => $this->web->disable2fa($r));
+
+        // Activity log route
+        $this->router->add('GET', '/activity', fn(Request $r, array $p = []) => $this->web->activityLog($r));
+
         // API routes
         $this->router->add('POST', '/api/v1/auth/login', fn(Request $r, array $p = []) => $this->api->login($r));
         $this->router->add('POST', '/api/v1/projects', fn(Request $r, array $p = []) => $this->api->createProject($r));
@@ -353,6 +444,18 @@ final class App
         $this->router->add('POST', '/api/v1/schedules', fn(Request $r, array $p = []) => $this->api->createSchedule($r));
         $this->router->add('GET', '/api/v1/exports/{exportId}', fn(Request $r, array $p) => $this->api->downloadExport($r, $p));
         $this->router->add('POST', '/api/v1/webhooks/test', fn(Request $r, array $p = []) => $this->api->testWebhook($r));
+
+        // API v2 routes
+        $this->router->add('GET', '/api/v2/scans/{scanId}', fn(Request $r, array $p) => $this->api->showScanV2($r, $p));
+        $this->router->add('GET', '/api/v2/scans/{scanId}/results', fn(Request $r, array $p) => $this->api->scanResultsV2($r, $p));
+        $this->router->add('GET', '/api/v2/scans/{scanId}/health', fn(Request $r, array $p) => $this->api->scanHealth($r, $p));
+        $this->router->add('GET', '/api/v2/scans/{scanId}/anchors', fn(Request $r, array $p) => $this->api->scanAnchors($r, $p));
+        $this->router->add('GET', '/api/v2/scans/{scanId}/velocity', fn(Request $r, array $p) => $this->api->scanVelocity($r, $p));
+        $this->router->add('GET', '/api/v2/projects/{projectId}/competitors', fn(Request $r, array $p) => $this->api->listCompetitors($r, $p));
+        $this->router->add('POST', '/api/v2/projects/{projectId}/competitors', fn(Request $r, array $p) => $this->api->addCompetitor($r, $p));
+        $this->router->add('GET', '/api/v2/projects/{projectId}/disavow', fn(Request $r, array $p) => $this->api->listDisavow($r, $p));
+        $this->router->add('POST', '/api/v2/projects/{projectId}/disavow', fn(Request $r, array $p) => $this->api->addDisavow($r, $p));
+        $this->router->add('POST', '/api/v2/projects/{projectId}/import', fn(Request $r, array $p) => $this->api->importUrls($r, $p));
 
         // Operational route
         $this->router->add('GET', '/health', fn(Request $r, array $p = []) => Response::json(['status' => 'ok', 'time' => gmdate('c')]));
@@ -368,7 +471,7 @@ final class App
             'X-Content-Type-Options' => 'nosniff',
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
             'Permissions-Policy' => 'geolocation=(), microphone=(), camera=()',
-            'Content-Security-Policy' => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';",
+            'Content-Security-Policy' => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self';",
             'X-Correlation-Id' => $correlationId,
         ];
     }

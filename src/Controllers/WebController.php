@@ -12,15 +12,24 @@ use BacklinkChecker\Http\SessionManager;
 use BacklinkChecker\I18n\Translator;
 use BacklinkChecker\Security\Csrf;
 use BacklinkChecker\Security\TokenService;
+use BacklinkChecker\Services\ActivityService;
+use BacklinkChecker\Services\AnchorAnalysisService;
 use BacklinkChecker\Services\AuditService;
 use BacklinkChecker\Services\AuthService;
+use BacklinkChecker\Services\CompetitorService;
+use BacklinkChecker\Services\DisavowService;
 use BacklinkChecker\Services\ExportService;
+use BacklinkChecker\Services\HealthScoreService;
+use BacklinkChecker\Services\ImportService;
 use BacklinkChecker\Services\ProjectService;
+use BacklinkChecker\Services\ReportService;
 use BacklinkChecker\Services\SavedViewService;
 use BacklinkChecker\Services\ScanService;
 use BacklinkChecker\Services\ScheduleService;
 use BacklinkChecker\Services\SettingsService;
+use BacklinkChecker\Services\TwoFactorService;
 use BacklinkChecker\Services\UpdaterService;
+use BacklinkChecker\Services\VelocityService;
 use BacklinkChecker\Support\ViewRenderer;
 
 final class WebController
@@ -40,7 +49,16 @@ final class WebController
         private readonly Csrf $csrf,
         private readonly Translator $translator,
         private readonly ViewRenderer $views,
-        private readonly UpdaterService $updater
+        private readonly UpdaterService $updater,
+        private readonly CompetitorService $competitors,
+        private readonly HealthScoreService $healthScore,
+        private readonly DisavowService $disavow,
+        private readonly AnchorAnalysisService $anchors,
+        private readonly VelocityService $velocity,
+        private readonly ImportService $imports,
+        private readonly ReportService $reports,
+        private readonly TwoFactorService $twoFactor,
+        private readonly ActivityService $activity
     ) {
     }
 
@@ -163,6 +181,11 @@ final class WebController
         $notifications = $this->projects->notifications($projectId);
         $savedViews = $this->savedViews->listForUser((int) $user['id'], $projectId);
         $schedules = $this->schedules->listByProject($projectId);
+        $competitorList = $this->competitors->listByProject($projectId);
+        $disavowRules = $this->disavow->listByProject($projectId);
+        $healthTrend = $this->healthScore->trendForProject($projectId);
+        $velocityHistory = $this->velocity->getProjectHistory($projectId);
+        $reportSchedules = $this->reports->listByProject($projectId);
 
         return Response::html($this->render('project', [
             'project' => $project,
@@ -171,6 +194,11 @@ final class WebController
             'notifications' => $notifications,
             'savedViews' => $savedViews,
             'schedules' => $schedules,
+            'competitors' => $competitorList,
+            'disavowRules' => $disavowRules,
+            'healthTrend' => $healthTrend,
+            'velocityHistory' => $velocityHistory,
+            'reportSchedules' => $reportSchedules,
             'error' => null,
             'flash' => $this->pullFlash(),
         ]));
@@ -306,6 +334,9 @@ final class WebController
 
         $results = $this->scans->results($scanId, $filters);
         $trend = $this->scans->trendAgainstPrevious($scanId);
+        $healthData = $this->healthScore->getForScan($scanId);
+        $anchorData = $this->anchors->getForScan($scanId);
+        $velocityData = $this->velocity->getProjectHistory((int) $scan['project_id'], 10);
 
         return Response::html($this->render('scan', [
             'project' => $project,
@@ -313,6 +344,9 @@ final class WebController
             'results' => $results,
             'trend' => $trend,
             'filters' => $filters,
+            'healthScore' => $healthData,
+            'anchorData' => $anchorData,
+            'velocityData' => $velocityData,
             'flash' => $this->pullFlash(),
         ]));
     }
@@ -482,6 +516,211 @@ final class WebController
         return Response::redirect('/dashboard');
     }
 
+    /**
+     * @param array<string, string> $params
+     */
+    public function addCompetitor(Request $request, array $params): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        $projectId = (int) ($params['id'] ?? 0);
+
+        try {
+            $this->competitors->addCompetitor($projectId, (int) $user['id'], (string) ($request->post['domain'] ?? ''));
+            $this->flash('success', $this->t('competitor.added'));
+        } catch (ValidationException $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return Response::redirect('/projects/' . $projectId);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function removeCompetitor(Request $request, array $params): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        $projectId = (int) ($params['id'] ?? 0);
+        $competitorId = (int) ($request->post['competitor_id'] ?? 0);
+        $this->competitors->removeCompetitor($competitorId, $projectId);
+        $this->flash('success', $this->t('competitor.removed'));
+
+        return Response::redirect('/projects/' . $projectId);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function addDisavowRule(Request $request, array $params): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        $projectId = (int) ($params['id'] ?? 0);
+
+        try {
+            $this->disavow->addRule(
+                $projectId,
+                (int) $user['id'],
+                (string) ($request->post['rule_type'] ?? 'domain'),
+                (string) ($request->post['value'] ?? ''),
+                (string) ($request->post['reason'] ?? '')
+            );
+            $this->flash('success', $this->t('disavow.added'));
+        } catch (ValidationException $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return Response::redirect('/projects/' . $projectId);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function removeDisavowRule(Request $request, array $params): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        $projectId = (int) ($params['id'] ?? 0);
+        $ruleId = (int) ($request->post['rule_id'] ?? 0);
+        $this->disavow->removeRule($ruleId, $projectId);
+        $this->flash('success', $this->t('disavow.removed'));
+
+        return Response::redirect('/projects/' . $projectId);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function downloadDisavowFile(Request $request, array $params): Response
+    {
+        $user = $this->requireUser();
+        $projectId = (int) ($params['id'] ?? 0);
+        $project = $this->projects->findForUser($projectId, (int) $user['id']);
+        if ($project === null) {
+            return Response::html($this->renderError(404, $this->t('errors.not_found')), 404);
+        }
+
+        $content = $this->disavow->generateDisavowFile($projectId);
+
+        return new Response(200, $content, [
+            'Content-Type' => 'text/plain; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="disavow_' . $projectId . '.txt"',
+        ]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function importUrls(Request $request, array $params): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        $projectId = (int) ($params['id'] ?? 0);
+        $project = $this->projects->findForUser($projectId, (int) $user['id']);
+        if ($project === null) {
+            return Response::html($this->renderError(404, $this->t('errors.not_found')), 404);
+        }
+
+        $csvContent = (string) ($request->post['csv_urls'] ?? '');
+
+        try {
+            $result = $this->imports->importFromCsv(
+                $projectId,
+                (int) $user['id'],
+                (string) $project['root_domain'],
+                $csvContent,
+                (string) ($request->post['provider'] ?? 'moz')
+            );
+            $this->flash('success', $this->t('import.success', ['count' => (string) $result['imported']]));
+        } catch (ValidationException $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return Response::redirect('/projects/' . $projectId);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function createReport(Request $request, array $params): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+        $projectId = (int) ($params['id'] ?? 0);
+
+        try {
+            $this->reports->createSchedule(
+                $projectId,
+                (int) $user['id'],
+                (string) ($request->post['frequency'] ?? 'weekly'),
+                (string) ($request->post['recipients'] ?? '')
+            );
+            $this->flash('success', $this->t('report.created'));
+        } catch (ValidationException $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return Response::redirect('/projects/' . $projectId);
+    }
+
+    public function enable2fa(Request $request): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+
+        $secret = (string) ($request->post['totp_secret'] ?? '');
+        $code = (string) ($request->post['totp_code'] ?? '');
+
+        try {
+            $this->twoFactor->enable((int) $user['id'], $secret, $code);
+            $this->audit->log((int) $user['id'], '2fa.enabled', 'user', (string) $user['id']);
+            $this->flash('success', $this->t('2fa.enabled'));
+        } catch (ValidationException $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return Response::redirect('/dashboard');
+    }
+
+    public function disable2fa(Request $request): Response
+    {
+        $user = $this->requireUser();
+        $this->requireCsrf($request);
+
+        $this->twoFactor->disable((int) $user['id']);
+        $this->audit->log((int) $user['id'], '2fa.disabled', 'user', (string) $user['id']);
+        $this->flash('success', $this->t('2fa.disabled'));
+
+        return Response::redirect('/dashboard');
+    }
+
+    public function activityLog(Request $request): Response
+    {
+        $user = $this->requireUser();
+        if (!$this->isAdmin($user)) {
+            return Response::html($this->renderError(403, $this->t('errors.forbidden')), 403);
+        }
+
+        $filters = [
+            'user_id' => (string) ($request->query['user_id'] ?? ''),
+            'action' => (string) ($request->query['action'] ?? ''),
+            'date_from' => (string) ($request->query['date_from'] ?? ''),
+            'date_to' => (string) ($request->query['date_to'] ?? ''),
+        ];
+
+        $logs = $this->activity->list($filters);
+        $stats = $this->activity->stats();
+
+        return Response::html($this->render('activity', [
+            'logs' => $logs,
+            'stats' => $stats,
+            'filters' => $filters,
+            'flash' => $this->pullFlash(),
+        ]));
+    }
+
     public function saveSettings(Request $request): Response
     {
         $user = $this->requireUser();
@@ -491,6 +730,12 @@ final class WebController
         $locale = (string) ($request->post['locale'] ?? 'en-US');
         $telemetryEnabled = isset($request->post['telemetry']) && $request->post['telemetry'] === '1';
         $retentionDays = max(1, (int) ($request->post['retention_days'] ?? 90));
+
+        $theme = (string) ($request->post['theme'] ?? 'light');
+        if (in_array($theme, ['light', 'dark'], true)) {
+            $this->db->execute('UPDATE users SET theme = ?, updated_at = ? WHERE id = ?', [$theme, gmdate('c'), $user['id']]);
+            $_SESSION['user']['theme'] = $theme;
+        }
 
         if (in_array($locale, $this->translator->supported(), true)) {
             $this->auth->updateLocale((int) $user['id'], $locale);
