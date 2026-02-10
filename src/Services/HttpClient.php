@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BacklinkChecker\Services;
 
 use BacklinkChecker\Config\Config;
+use BacklinkChecker\Security\SsrfGuard;
 
 final class HttpClient
 {
@@ -66,6 +67,18 @@ final class HttpClient
      */
     public function postJson(string $url, array $payload, array $headers = []): array
     {
+        try {
+            SsrfGuard::assertExternalUrl($url);
+        } catch (\InvalidArgumentException $e) {
+            return [
+                'ok' => false,
+                'status' => 0,
+                'headers' => [],
+                'body' => '',
+                'error' => 'SSRF: ' . $e->getMessage(),
+            ];
+        }
+
         $ch = curl_init();
         $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
         $headerLines = [
@@ -117,6 +130,18 @@ final class HttpClient
      */
     private function singleGet(string $url): array
     {
+        try {
+            SsrfGuard::assertExternalUrl($url);
+        } catch (\InvalidArgumentException $e) {
+            return [
+                'ok' => false,
+                'status' => 0,
+                'headers' => [],
+                'body' => '',
+                'error' => 'SSRF: ' . $e->getMessage(),
+            ];
+        }
+
         $ch = curl_init();
 
         curl_setopt_array($ch, [
