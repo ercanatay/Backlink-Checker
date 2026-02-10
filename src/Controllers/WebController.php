@@ -59,6 +59,8 @@ final class WebController
             return Response::html($this->render('login', ['error' => null]));
         }
 
+        $this->requireCsrf($request);
+
         $email = trim((string) ($request->post['email'] ?? ''));
         $password = (string) ($request->post['password'] ?? '');
 
@@ -75,6 +77,8 @@ final class WebController
 
     public function logout(Request $request): Response
     {
+        $this->requireCsrf($request);
+
         $user = $this->session->user();
         if ($user !== null) {
             $this->audit->log((int) $user['id'], 'auth.logout', 'user', (string) $user['id'], [], $request->ip(), $request->userAgent());
@@ -483,6 +487,7 @@ final class WebController
         $user = $this->requireUser();
         $this->requireCsrf($request);
 
+        // Locale is per-user; telemetry and retention are global (admin-only)
         $locale = (string) ($request->post['locale'] ?? 'en-US');
         $telemetryEnabled = isset($request->post['telemetry']) && $request->post['telemetry'] === '1';
         $retentionDays = max(1, (int) ($request->post['retention_days'] ?? 90));
@@ -492,8 +497,10 @@ final class WebController
             $_SESSION['user']['locale'] = $locale;
         }
 
-        $this->settings->set('telemetry.enabled', ['enabled' => $telemetryEnabled]);
-        $this->settings->set('retention.days', ['days' => $retentionDays]);
+        if ($this->isAdmin($user)) {
+            $this->settings->set('telemetry.enabled', ['enabled' => $telemetryEnabled]);
+            $this->settings->set('retention.days', ['days' => $retentionDays]);
+        }
 
         $this->flash('success', $this->t('settings.saved'));
 

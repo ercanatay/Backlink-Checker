@@ -13,7 +13,7 @@ final class Responder
     {
         http_response_code($response->status);
 
-        $headers = array_merge($securityHeaders, $response->headers);
+        $headers = array_merge($response->headers, $securityHeaders);
         foreach ($headers as $name => $value) {
             header($name . ': ' . $value);
         }

@@ -88,15 +88,18 @@ final class Database
     }
 
     /**
-     * @param callable(PDO):void $fn
+     * @template T
+     * @param callable(PDO):T $fn
+     * @return T
      */
-    public function transaction(callable $fn): void
+    public function transaction(callable $fn): mixed
     {
         $this->beginTransaction();
         try {
-            $fn($this->pdo);
+            $result = $fn($this->pdo);
             $this->commit();
-        } catch (PDOException $e) {
+            return $result;
+        } catch (\Throwable $e) {
             $this->rollBack();
             throw $e;
         }

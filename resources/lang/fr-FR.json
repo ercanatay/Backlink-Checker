@@ -16,6 +16,7 @@
     "auth.login_title": "Connectez-vous à votre espace",
     "auth.email": "E-mail",
     "auth.password": "Mot de passe",
+    "auth.login_hint": "Saisissez vos identifiants pour continuer.",
     "auth.submit": "Connexion",
     "auth.failed": "E-mail ou mot de passe invalide.",
     "auth.remember": "Rester connecté",

@@ -54,7 +54,7 @@ final class Config
 
         $items = [];
         foreach ($defaults as $key => $default) {
-            $items[$key] = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key) ?: $default;
+            $items[$key] = $_ENV[$key] ?? $_SERVER[$key] ?? (getenv($key) !== false ? getenv($key) : null) ?? $default;
         }
 
         $items['ROOT_PATH'] = rtrim($rootPath, DIRECTORY_SEPARATOR);

@@ -200,18 +200,19 @@ final class App
         }
 
         try {
+            $isApiLogin = $request->path() === '/api/v1/auth/login' && $request->method() === 'POST';
+
             if (str_starts_with($request->path(), '/api/')) {
-                if ($request->path() === '/api/v1/auth/login' && $request->method() === 'POST') {
+                if ($isApiLogin) {
                     if (!$this->rateLimiter->hit('login:' . $request->ip(), $this->config->int('RATE_LIMIT_LOGIN_PER_15_MIN', 10), 900)) {
                         $this->emitJsonError('rate_limited', 'Too many login attempts', 429, $correlationId);
                         return;
                     }
-                }
-            }
-            if (str_starts_with($request->path(), '/api/')) {
-                if (!$this->rateLimiter->hit('api:' . $request->ip(), $this->config->int('RATE_LIMIT_API_PER_MIN', 120), 60)) {
-                    $this->emitJsonError('rate_limited', 'Too many API requests', 429, $correlationId);
-                    return;
+                } else {
+                    if (!$this->rateLimiter->hit('api:' . $request->ip(), $this->config->int('RATE_LIMIT_API_PER_MIN', 120), 60)) {
+                        $this->emitJsonError('rate_limited', 'Too many API requests', 429, $correlationId);
+                        return;
+                    }
                 }
             }
 
@@ -236,7 +237,11 @@ final class App
             $this->responder->emit($response, $this->securityHeaders($correlationId));
         } catch (\RuntimeException $e) {
             if (str_starts_with($request->path(), '/api/')) {
-                $this->emitJsonError('runtime_error', $e->getMessage(), 401, $correlationId);
+                $isAuth = $e->getMessage() === 'Unauthorized' || $e->getMessage() === 'Authentication required';
+                $code = $isAuth ? 401 : 400;
+                $label = $isAuth ? 'unauthorized' : 'runtime_error';
+                $msg = $isAuth ? $e->getMessage() : 'Request failed';
+                $this->emitJsonError($label, $msg, $code, $correlationId);
                 return;
             }
 

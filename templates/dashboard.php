@@ -188,6 +188,7 @@ $isAdmin = is_array($roles) && in_array('admin', $roles, true);
     </form>
   </section>
 
+  <?php if ($isAdmin): ?>
   <section class="panel">
     <h2><?= htmlspecialchars($t('updater.title'), ENT_QUOTES, 'UTF-8') ?></h2>
     <div class="row">
@@ -237,21 +238,18 @@ $isAdmin = is_array($roles) && in_array('admin', $roles, true);
     <?php if (!empty($updaterState['last_apply_error'])): ?>
       <p style="color:#b91c1c"><strong><?= htmlspecialchars($t('updater.last_apply_error'), ENT_QUOTES, 'UTF-8') ?>:</strong> <span class="mono"><?= htmlspecialchars((string) $updaterState['last_apply_error'], ENT_QUOTES, 'UTF-8') ?></span></p>
     <?php endif; ?>
-    <?php if ($isAdmin): ?>
-      <div class="row">
-        <form method="post" action="/settings/updater/check">
-          <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-          <button type="submit"><?= htmlspecialchars($t('updater.check_now'), ENT_QUOTES, 'UTF-8') ?></button>
-        </form>
-        <form method="post" action="/settings/updater/apply">
-          <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-          <button type="submit"><?= htmlspecialchars($t('updater.apply_now'), ENT_QUOTES, 'UTF-8') ?></button>
-        </form>
-      </div>
-    <?php else: ?>
-      <p><?= htmlspecialchars($t('updater.admin_only'), ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endif; ?>
+    <div class="row">
+      <form method="post" action="/settings/updater/check">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+        <button type="submit"><?= htmlspecialchars($t('updater.check_now'), ENT_QUOTES, 'UTF-8') ?></button>
+      </form>
+      <form method="post" action="/settings/updater/apply">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+        <button type="submit"><?= htmlspecialchars($t('updater.apply_now'), ENT_QUOTES, 'UTF-8') ?></button>
+      </form>
+    </div>
   </section>
+  <?php endif; ?>
 
   <section class="panel">
     <h2><?= htmlspecialchars($t('nav.api_tokens'), ENT_QUOTES, 'UTF-8') ?></h2>

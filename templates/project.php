@@ -135,7 +135,7 @@
         <label><?= htmlspecialchars($t('notification.destination'), ENT_QUOTES, 'UTF-8') ?></label>
         <input type="text" name="destination" required>
         <label>Secret (optional)</label>
-        <input type="text" name="secret">
+        <input type="password" name="secret" autocomplete="off">
         <button type="submit"><?= htmlspecialchars($t('notification.add'), ENT_QUOTES, 'UTF-8') ?></button>
       </form>
     </aside>

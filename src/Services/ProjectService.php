@@ -56,18 +56,20 @@ final class ProjectService
 
         $now = gmdate('c');
 
-        $this->db->execute(
-            'INSERT INTO projects(name, description, root_domain, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-            [$name, $description, $rootDomain, $userId, $now, $now]
-        );
-        $projectId = $this->db->lastInsertId();
+        return $this->db->transaction(function () use ($name, $description, $rootDomain, $userId, $now): int {
+            $this->db->execute(
+                'INSERT INTO projects(name, description, root_domain, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+                [$name, $description, $rootDomain, $userId, $now, $now]
+            );
+            $projectId = $this->db->lastInsertId();
 
-        $this->db->execute(
-            'INSERT INTO project_members(project_id, user_id, role, created_at) VALUES (?, ?, ?, ?)',
-            [$projectId, $userId, 'admin', $now]
-        );
+            $this->db->execute(
+                'INSERT INTO project_members(project_id, user_id, role, created_at) VALUES (?, ?, ?, ?)',
+                [$projectId, $userId, 'admin', $now]
+            );
 
-        return $projectId;
+            return $projectId;
+        });
     }
 
     /**

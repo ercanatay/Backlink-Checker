@@ -31,20 +31,22 @@ final class AuthService
             return;
         }
 
-        $email = $this->config->string('BOOTSTRAP_ADMIN_EMAIL', 'admin@example.com');
+        $email = strtolower(trim($this->config->string('BOOTSTRAP_ADMIN_EMAIL', 'admin@example.com')));
         $name = $this->config->string('BOOTSTRAP_ADMIN_NAME', 'Administrator');
         $password = $this->config->string('BOOTSTRAP_ADMIN_PASSWORD', 'ChangeThisNow!');
 
-        $this->db->execute(
-            'INSERT INTO users(email, password_hash, display_name, locale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-            [$email, $this->hasher->hash($password), $name, $this->config->string('APP_DEFAULT_LOCALE', 'en-US'), gmdate('c'), gmdate('c')]
-        );
-        $userId = $this->db->lastInsertId();
+        $this->db->transaction(function () use ($email, $name, $password): void {
+            $this->db->execute(
+                'INSERT INTO users(email, password_hash, display_name, locale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+                [$email, $this->hasher->hash($password), $name, $this->config->string('APP_DEFAULT_LOCALE', 'en-US'), gmdate('c'), gmdate('c')]
+            );
+            $userId = $this->db->lastInsertId();
 
-        $adminRole = $this->db->fetchOne('SELECT id FROM roles WHERE name = ?', ['admin']);
-        if ($adminRole !== null) {
-            $this->db->execute('INSERT INTO user_roles(user_id, role_id, created_at) VALUES (?, ?, ?)', [$userId, $adminRole['id'], gmdate('c')]);
-        }
+            $adminRole = $this->db->fetchOne('SELECT id FROM roles WHERE name = ?', ['admin']);
+            if ($adminRole !== null) {
+                $this->db->execute('INSERT INTO user_roles(user_id, role_id, created_at) VALUES (?, ?, ?)', [$userId, $adminRole['id'], gmdate('c')]);
+            }
+        });
     }
 
     /**

@@ -50,7 +50,7 @@
   </div>
 </header>
 <main id="main" class="container">
-  <?php if (!empty($flash)): ?><div class="panel" role="status"><?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+  <?php if (!empty($flash)): ?><div class="flash <?= htmlspecialchars($flash['type'], ENT_QUOTES, 'UTF-8') ?>" role="status"><?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
   <section class="panel meta">
     <div><strong><?= htmlspecialchars($t('scan.status'), ENT_QUOTES, 'UTF-8') ?></strong><br><?= htmlspecialchars($scan['status'], ENT_QUOTES, 'UTF-8') ?></div>
     <div><strong><?= htmlspecialchars($t('scan.total_targets'), ENT_QUOTES, 'UTF-8') ?></strong><br><?= (int) $scan['total_targets'] ?></div>
@@ -70,7 +70,6 @@
 
   <section class="panel">
     <form method="get" class="filters">
-      <input type="hidden" name="noop" value="1">
       <div><label for="filter-status"><?= htmlspecialchars($t('scan.filter_status'), ENT_QUOTES, 'UTF-8') ?></label><input id="filter-status" name="status" value="<?= htmlspecialchars($filters['status'], ENT_QUOTES, 'UTF-8') ?>"></div>
       <div><label for="filter-link-type"><?= htmlspecialchars($t('scan.filter_link_type'), ENT_QUOTES, 'UTF-8') ?></label><input id="filter-link-type" name="link_type" value="<?= htmlspecialchars($filters['link_type'], ENT_QUOTES, 'UTF-8') ?>"></div>
       <div><label for="filter-search"><?= htmlspecialchars($t('scan.filter_search'), ENT_QUOTES, 'UTF-8') ?></label><input id="filter-search" name="search" value="<?= htmlspecialchars($filters['search'], ENT_QUOTES, 'UTF-8') ?>"></div>

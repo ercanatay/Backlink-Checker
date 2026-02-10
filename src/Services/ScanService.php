@@ -55,7 +55,7 @@ final class ScanService
 
         $correlationId = \BacklinkChecker\Support\Uuid::v4();
 
-        $this->db->transaction(function () use ($projectId, $userId, $normalizedRootDomain, $provider, $urls, $total, $correlationId): void {
+        $scanId = $this->db->transaction(function () use ($projectId, $userId, $normalizedRootDomain, $provider, $urls, $total, $correlationId): int {
             $now = gmdate('c');
             $this->db->execute(
                 'INSERT INTO scans(project_id, requested_by, status, provider, root_domain, total_targets, correlation_id, created_at, updated_at) '
@@ -72,10 +72,10 @@ final class ScanService
             }
 
             $this->queue->enqueue('scan.run', ['scan_id' => $scanId], null, $correlationId);
+
+            return $scanId;
         });
 
-        $scan = $this->db->fetchOne('SELECT id FROM scans WHERE project_id = ? ORDER BY id DESC LIMIT 1', [$projectId]);
-        $scanId = (int) ($scan['id'] ?? 0);
         $this->telemetry->track('scan.created', ['scan_id' => $scanId, 'project_id' => $projectId]);
 
         return $scanId;
@@ -139,15 +139,16 @@ final class ScanService
 
         try {
             foreach (array_chunk($targets, $chunkSize) as $chunk) {
+                // Check cancellation once per chunk instead of per-target (avoids N+1 queries)
+                $freshScan = $this->findScan($scanId);
+                if ($freshScan !== null && (string) $freshScan['status'] === ScanStatus::CANCELLED) {
+                    return;
+                }
+
                 $analysisResults = [];
                 $metricUrls = [];
 
                 foreach ($chunk as $target) {
-                    $freshScan = $this->findScan($scanId);
-                    if ($freshScan !== null && (string) $freshScan['status'] === ScanStatus::CANCELLED) {
-                        return;
-                    }
-
                     $analysis = $this->analyzer->analyze((string) $target['url'], (string) $scan['root_domain']);
                     $analysisResults[] = ['target' => $target, 'analysis' => $analysis];
 

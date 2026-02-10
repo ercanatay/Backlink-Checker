@@ -16,6 +16,7 @@
     "auth.login_title": "Bei Ihrem Workspace anmelden",
     "auth.email": "E-Mail",
     "auth.password": "Passwort",
+    "auth.login_hint": "Geben Sie Ihre Anmeldedaten ein, um fortzufahren.",
     "auth.submit": "Anmelden",
     "auth.failed": "Ungültige E-Mail oder Passwort.",
     "auth.remember": "Angemeldet bleiben",
