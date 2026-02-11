@@ -2,11 +2,20 @@
 
 Backlink Checker Pro v2 is a modular PHP platform for backlink auditing at team scale. It includes asynchronous scans, RBAC, API access, scheduling, alerts, export pipelines, and 10-language localization (including Turkish).
 
-## Latest Release (v2.1.5 - 2026-02-10)
+## Latest Release (v2.1.6 - 2026-02-11)
 
-- Added SSRF validation to `HttpClient` request paths (`GET` and `POST`) to block private/internal targets.
-- Ensured redirect-following scans stay protected by validating every resolved hop before network access.
-- Added regression coverage to verify analyzer requests to internal addresses are blocked safely.
+- Reviewed merged pull requests #1 through #8 and confirmed all required CI checks are green.
+- Re-ran local regression suite (`php tests/run.php`) with 47/47 passing tests on PHP 8.4.11.
+- Documented the latest hardening track covering API login brute-force controls, export path traversal protection, and SSRF controls in webhook and analyzer HTTP flows.
+- Added a concise PR review snapshot below for release traceability.
+
+## PR Review Snapshot (2026-02-11)
+
+- PR #8: Security, localization, and code quality improvements (CSRF enforcement, admin-only updater controls, safer error handling, and transaction consistency improvements).
+- PR #7: High-severity export path traversal remediation with `ExportService::isValidExportPath` validation and unit coverage.
+- PR #6: SSRF guard introduction for webhook delivery targets, including private/local network blocks.
+- PR #4 and PR #2: Scan processing and analyzer performance optimizations (transaction batching and relative-link short-circuiting).
+- PR #1: Critical API login endpoint rate-limit correction to reduce brute-force risk.
 
 ## Highlights
 
