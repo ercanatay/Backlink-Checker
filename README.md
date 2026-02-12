@@ -327,6 +327,17 @@ See `/docs/MIGRATION.md`.
 ### Export download missing
 - Ensure `storage/exports` is writable.
 
+## Support / Sponsorship
+
+I’m Ercan Atay, a software engineer building practical, open-source tools that help people work faster and smarter. My focus is on web technologies, automation, and developer productivity.
+
+Your sponsorship helps me maintain and improve projects like Backlink Checker, add new features, fix issues quickly, and keep everything accessible to the community.
+
+If my work saves you time or supports your business, your support will directly fuel more reliable releases, better documentation, and long-term open-source sustainability. Thank you for being part of this journey.
+
+- GitHub Sponsors: `https://github.com/sponsors/ercanatay`
+- Buy Me a Coffee: `https://buymeacoffee.com/ercanatay`
+
 ## License
 
 MIT. See `LICENSE`.
