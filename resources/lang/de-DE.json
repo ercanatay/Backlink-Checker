@@ -5,7 +5,7 @@
         "lastReviewed": "2026-02-08",
         "rtl": false
     },
-    "app.name": "Backlink Checker Pro v2",
+    "app.name": "Cybokron Backlink Checker",
     "nav.dashboard": "Dashboard",
     "nav.projects": "Projekte",
     "nav.logout": "Abmelden",
@@ -116,7 +116,7 @@
     "errors.forbidden": "Keine Berechtigung für diese Aktion.",
     "errors.server": "Unerwarteter Serverfehler.",
     "a11y.skip_to_content": "Zum Hauptinhalt springen",
-    "footer.powered": "Powered by Backlink Checker Pro v2",
+    "footer.powered": "Powered by Cybokron Backlink Checker",
     "updater.title": "Automatischer Updater",
     "updater.current_version": "Aktuelle Version",
     "updater.latest_version": "Neueste Version",

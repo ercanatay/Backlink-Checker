@@ -41,7 +41,7 @@ return static function (TestRunner $t): void {
             'status' => 200,
             'body' => [
                 'tag_name' => 'v2.1.0',
-                'html_url' => 'https://github.com/ercanatay/Backlink-Checker/releases/tag/v2.1.0',
+                'html_url' => 'https://github.com/ercanatay/cybokron-backlink-checker/releases/tag/v2.1.0',
                 'draft' => false,
                 'prerelease' => false,
             ],

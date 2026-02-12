@@ -5,7 +5,7 @@
         "lastReviewed": "2026-02-08",
         "rtl": false
     },
-    "app.name": "Backlink Checker Pro v2",
+    "app.name": "Cybokron Backlink Checker",
     "nav.dashboard": "Панель",
     "nav.projects": "Проекты",
     "nav.logout": "Выйти",
@@ -116,7 +116,7 @@
     "errors.forbidden": "Недостаточно прав для этого действия.",
     "errors.server": "Непредвиденная ошибка сервера.",
     "a11y.skip_to_content": "Перейти к основному содержимому",
-    "footer.powered": "Работает на Backlink Checker Pro v2",
+    "footer.powered": "Работает на Cybokron Backlink Checker",
     "updater.title": "Автообновление",
     "updater.current_version": "Текущая версия",
     "updater.latest_version": "Последний релиз",

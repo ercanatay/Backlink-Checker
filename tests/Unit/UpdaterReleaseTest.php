@@ -56,7 +56,7 @@ return static function (TestRunner $t): void {
                 return $result(0, '');
             }
             if ($command === ['git', 'remote', 'get-url', 'origin']) {
-                return $result(0, "https://github.com/ercanatay/Backlink-Checker.git\n");
+                return $result(0, "https://github.com/ercanatay/cybokron-backlink-checker.git\n");
             }
             if ($command === ['git', 'rev-list', '-n', '1', 'v2.1.0']) {
                 return $result(0, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n");
@@ -73,7 +73,7 @@ return static function (TestRunner $t): void {
             'status' => 200,
             'body' => [
                 'tag_name' => 'v2.1.0',
-                'html_url' => 'https://github.com/ercanatay/Backlink-Checker/releases/tag/v2.1.0',
+                'html_url' => 'https://github.com/ercanatay/cybokron-backlink-checker/releases/tag/v2.1.0',
                 'draft' => false,
                 'prerelease' => false,
             ],
@@ -105,7 +105,7 @@ return static function (TestRunner $t): void {
                 return $result(0, '');
             }
             if ($command === ['git', 'remote', 'get-url', 'origin']) {
-                return $result(0, "https://github.com/ercanatay/Backlink-Checker.git\n");
+                return $result(0, "https://github.com/ercanatay/cybokron-backlink-checker.git\n");
             }
 
             return $result(1, '', 'unknown command: ' . implode(' ', $command));
@@ -116,7 +116,7 @@ return static function (TestRunner $t): void {
             'status' => 200,
             'body' => [
                 'tag_name' => 'v2.2.0',
-                'html_url' => 'https://github.com/ercanatay/Backlink-Checker/releases/tag/v2.2.0',
+                'html_url' => 'https://github.com/ercanatay/cybokron-backlink-checker/releases/tag/v2.2.0',
                 'draft' => false,
                 'prerelease' => true,
             ],

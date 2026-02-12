@@ -80,7 +80,7 @@ final class NotificationService
 
         $from = preg_replace('/[\r\n]/', '', $this->config->string('SMTP_FROM', 'noreply@example.com'));
 
-        $subject = '[Backlink Checker] Scan completed #' . ($payload['scan']['id'] ?? '');
+        $subject = '[Cybokron Backlink Checker] Scan completed #' . ($payload['scan']['id'] ?? '');
         $body = "Scan #" . ($payload['scan']['id'] ?? '') . " completed with status: " . ($payload['scan']['status'] ?? '')
             . "\nProcessed: " . ($payload['scan']['processed_targets'] ?? 0) . "/" . ($payload['scan']['total_targets'] ?? 0)
             . "\nFinished: " . ($payload['scan']['finished_at'] ?? '');

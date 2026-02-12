@@ -5,7 +5,7 @@
         "lastReviewed": "2026-02-08",
         "rtl": true
     },
-    "app.name": "Backlink Checker Pro v2",
+    "app.name": "Cybokron Backlink Checker",
     "nav.dashboard": "لوحة التحكم",
     "nav.projects": "المشاريع",
     "nav.logout": "تسجيل الخروج",
@@ -116,7 +116,7 @@
     "errors.forbidden": "ليس لديك صلاحية لهذا الإجراء.",
     "errors.server": "خطأ غير متوقع في الخادم.",
     "a11y.skip_to_content": "تخطي إلى المحتوى الرئيسي",
-    "footer.powered": "مشغّل بواسطة Backlink Checker Pro v2",
+    "footer.powered": "مشغّل بواسطة Cybokron Backlink Checker",
     "updater.title": "مُحدّث تلقائي",
     "updater.current_version": "الإصدار الحالي",
     "updater.latest_version": "أحدث إصدار",

@@ -5,7 +5,7 @@
         "lastReviewed": "2026-02-08",
         "rtl": false
     },
-    "app.name": "Backlink Checker Pro v2",
+    "app.name": "Cybokron Backlink Checker",
     "nav.dashboard": "Panel",
     "nav.projects": "Projeler",
     "nav.logout": "Çıkış",
@@ -116,7 +116,7 @@
     "errors.forbidden": "Bu işlem için yetkiniz yok.",
     "errors.server": "Beklenmeyen sunucu hatası.",
     "a11y.skip_to_content": "Ana içeriğe geç",
-    "footer.powered": "Backlink Checker Pro v2 ile desteklenmektedir",
+    "footer.powered": "Cybokron Backlink Checker ile desteklenmektedir",
     "updater.title": "Otomatik Güncelleyici",
     "updater.current_version": "Mevcut sürüm",
     "updater.latest_version": "Son sürüm",

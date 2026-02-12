@@ -150,7 +150,7 @@ final class HttpClient
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_TIMEOUT => $this->config->int('SCAN_TIMEOUT_SECONDS', 20),
             CURLOPT_CONNECTTIMEOUT => $this->config->int('SCAN_CONNECT_TIMEOUT_SECONDS', 10),
-            CURLOPT_USERAGENT => $this->config->string('SCAN_USER_AGENT', 'BacklinkCheckerProBot/2.0'),
+            CURLOPT_USERAGENT => $this->config->string('SCAN_USER_AGENT', 'CybokronBacklinkCheckerBot/2.0'),
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HEADER => true,

@@ -1,6 +1,6 @@
 {
-  "name": "ercanatay/backlink-checker-pro",
-  "description": "Backlink Checker Pro v2 - modular PHP SEO backlink analysis platform",
+  "name": "ercanatay/cybokron-backlink-checker",
+  "description": "Cybokron Backlink Checker - modular PHP SEO backlink analysis platform",
   "type": "project",
   "license": "MIT",
   "require": {

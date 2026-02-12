@@ -1,6 +1,6 @@
 # Architecture
 
-Backlink Checker Pro v2 is a modular PHP application using an SSR web UI plus REST API.
+Cybokron Backlink Checker is a modular PHP application using an SSR web UI plus REST API.
 
 ## Layers
 - `src/App.php`: bootstrap, DI wiring, routing, middleware-like checks, security headers.
